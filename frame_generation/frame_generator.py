@@ -45,6 +45,9 @@ class frame_generator():
         for filename in os.listdir(self.temp_dir):
             file_path = os.path.join(self.temp_dir, filename)
             os.remove(file_path)
+        for filename in os.listdir(self.temp_dir_output):
+            file_path = os.path.join(self.temp_dir, filename)
+            os.remove(file_path)
     def make_nparray_for_train(self):
         x_train = []
         x_train1 = []
@@ -185,6 +188,4 @@ class frame_generator():
             video_writer.write(image)
 
         video_writer.release()
-
-
-
+        self.delete_files()
