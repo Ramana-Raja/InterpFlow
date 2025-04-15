@@ -9,10 +9,6 @@ This project implements a frame generation tool using the RIFE (Real-Time Interm
 
 To run this project, make sure you have the required dependencies installed. You can install them using `pip`:
 
-```bash
-pip install -r requirements.txt
-```
-
 The dependencies include:
 
 - `torch`
