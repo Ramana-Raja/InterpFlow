@@ -49,5 +49,3 @@ frame_gen.predict("output_folder/")
 This project uses code from the [RIFE](https://github.com/hzwer/ECCV2022-RIFE) repository, which is licensed under the MIT License. The original authors of this repository are:
 
 - [hzwer](https://github.com/hzwer)
-
-Please retain the copyright notice and license text in your project and provide appropriate credit to the original authors as specified in the license.
