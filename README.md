@@ -27,15 +27,6 @@ To initialize the frame generator, provide the location of the video file and th
 frame_gen = frame_generator(video_loc="path/to/video.mp4", fps=30)
 ```
 
-### Generate Intermediate Frames
-
-You can create images from a video, generate intermediate frames, and save the output:
-
-```python
-frame_gen.create_images()
-frame_gen.train(epochs=5)
-frame_gen.predict("output_video.mp4")
-```
 
 ### Model Training
 
