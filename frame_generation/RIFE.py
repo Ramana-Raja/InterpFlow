@@ -235,104 +235,105 @@ class Model:
             self.optimG.step()
         # return pred, merged_img, flow, loss_l1, loss_flow, loss_cons, loss_ter, loss_mask
         return loss_G
-def generate_images(prediction, test_input,test_input2, tar):
-  prediction = prediction.permute(0, 2, 3, 1)
-  prediction = prediction.to("cpu")
-  prediction = prediction.detach().numpy()
-  test_input = test_input.permute(0, 2, 3, 1)
-  test_input = test_input.to("cpu")
-  test_input = test_input.detach().numpy()
-
-  test_input2 = test_input2.permute(0, 2, 3, 1)
-  test_input2 = test_input2.to("cpu")
-  test_input2 = test_input2.detach().numpy()
-
-  tar = tar.permute(0, 2, 3, 1)
-  tar = tar.to("cpu")
-  tar = tar.detach().numpy()
-
-  plt.figure(figsize=(15, 15))
-
-  display_list = [test_input[0], tar[0],test_input2[0],prediction[0]]
-  title = ['Input Image1',"Ground Truth", 'input_image2', 'Predicted Image']
-
-  for i in range(4):
-    plt.subplot(1, 4, i+1)
-    plt.title(title[i])
-    # Getting the pixel values in the [0, 1] range to plot.
-    plt.imshow(display_list[i] * 0.5 + 0.5)
-    plt.axis('off')
-  plt.show()
-model = Model()
-def fit(train_ds,epochs):
-    for j in range(epochs):
-       for i, (batch_x, batch_x1, batch_y) in enumerate(train_ds):
-
-         x = batch_x.to(device)
-         x1 = batch_x1.to(device)
-         y = batch_y.to(device)
-         x=x.permute(0,3,1,2)
-         x1 = x1.permute(0, 3, 1, 2)
-         y = y.permute(0, 3, 1, 2)
-         x_new = torch.cat((x,x1),1)
-         if(int(i)%500==0):
-          p = model.inference(x,x1)
-          generate_images(p,x,x1,y)
-         start_time = time.time()
-         lr=get_learning_rate(i)
-         loss=model.update(x_new,y,lr)
-         end_time = time.time()
-         time1  = end_time-start_time
-         print(f"loss={loss}   time taken={time1}  epochs={i}")
-    model.save_model(path="C:\\Users\\raman\\PycharmProjects\\pythonProject1\\pytorch\\frame_generation\\DLSS",rank=0)
-
-directory = 'C:\\Users\\raman\\PycharmProjects\\pythonProject1\\tensorflow1\\frame_generation\\fortnite'
-
-
-
-def train_model():
-    x_train=[]
-    x_train1=[]
-    y_train=[]
-    i=0
-    j=0
-    for filename in os.listdir(directory):
-            if(j==1000):
-                break
-            if(j<200):
-                j=j+1
-                continue
-            else:
-             if filename.endswith(".jpg") or filename.endswith(".png"):
-                image = Image.open(os.path.join(directory, filename))
-                image = image.resize(( 640,  480))
-                image = image.convert("RGB")
-                image_array = np.array(image)
-                image_array = (image_array/255.0).astype('float32')
-                if(i==0):
-                    x_train.append(image_array)
-                    i=i+1
-                if(i==1):
-                    y_train.append(image_array)
-                    i=i+1
-                if(i==2):
-                    x_train1.append(image_array)
-                    i=0
-                image.close()
-            j=j+1
-    print(j)
-    x = np.array(x_train)
-    x1 = np.array(x_train1)
-    y = np.array(y_train)
-    x = torch.tensor(x, dtype=torch.float32)
-    x1 = torch.tensor(x1, dtype=torch.float32)
-    y = torch.tensor(y, dtype=torch.float32)
-
-    dataset = TensorDataset(x, x1, y)
+# def generate_images(prediction, test_input,test_input2, tar):
+#   prediction = prediction.permute(0, 2, 3, 1)
+#   prediction = prediction.to("cpu")
+#   prediction = prediction.detach().numpy()
+#   test_input = test_input.permute(0, 2, 3, 1)
+#   test_input = test_input.to("cpu")
+#   test_input = test_input.detach().numpy()
+#
+#   test_input2 = test_input2.permute(0, 2, 3, 1)
+#   test_input2 = test_input2.to("cpu")
+#   test_input2 = test_input2.detach().numpy()
+#
+#   tar = tar.permute(0, 2, 3, 1)
+#   tar = tar.to("cpu")
+#   tar = tar.detach().numpy()
+#
+#   plt.figure(figsize=(15, 15))
+#
+#   display_list = [test_input[0], tar[0],test_input2[0],prediction[0]]
+#   title = ['Input Image1',"Ground Truth", 'input_image2', 'Predicted Image']
+#
+#   for i in range(4):
+#     plt.subplot(1, 4, i+1)
+#     plt.title(title[i])
+#     # Getting the pixel values in the [0, 1] range to plot.
+#     plt.imshow(display_list[i] * 0.5 + 0.5)
+#     plt.axis('off')
+#   plt.show()
+#
+# def fit(train_ds,epochs):
+#     model = Model()
+#     for j in range(epochs):
+#        for i, (batch_x, batch_x1, batch_y) in enumerate(train_ds):
+#
+#          x = batch_x.to(device)
+#          x1 = batch_x1.to(device)
+#          y = batch_y.to(device)
+#          x=x.permute(0,3,1,2)
+#          x1 = x1.permute(0, 3, 1, 2)
+#          y = y.permute(0, 3, 1, 2)
+#          x_new = torch.cat((x,x1),1)
+#          if(int(i)%500==0):
+#           p = model.inference(x,x1)
+#           generate_images(p,x,x1,y)
+#          start_time = time.time()
+#          lr=get_learning_rate(i)
+#          loss=model.update(x_new,y,lr)
+#          end_time = time.time()
+#          time1  = end_time-start_time
+#          print(f"loss={loss}   time taken={time1}  epochs={i}")
+#     model.save_model(path="C:\\Users\\raman\\PycharmProjects\\pythonProject1\\pytorch\\frame_generation\\DLSS",rank=0)
+#
+# directory = 'C:\\Users\\raman\\PycharmProjects\\pythonProject1\\tensorflow1\\frame_generation\\fortnite'
+#
+#
+#
+# def train_model():
+#     x_train=[]
+#     x_train1=[]
+#     y_train=[]
+#     i=0
+#     j=0
+#     for filename in os.listdir(directory):
+#             if(j==1000):
+#                 break
+#             if(j<200):
+#                 j=j+1
+#                 continue
+#             else:
+#              if filename.endswith(".jpg") or filename.endswith(".png"):
+#                 image = Image.open(os.path.join(directory, filename))
+#                 image = image.resize(( 640,  480))
+#                 image = image.convert("RGB")
+#                 image_array = np.array(image)
+#                 image_array = (image_array/255.0).astype('float32')
+#                 if(i==0):
+#                     x_train.append(image_array)
+#                     i=i+1
+#                 if(i==1):
+#                     y_train.append(image_array)
+#                     i=i+1
+#                 if(i==2):
+#                     x_train1.append(image_array)
+#                     i=0
+#                 image.close()
+#             j=j+1
+#     print(j)
+#     x = np.array(x_train)
+#     x1 = np.array(x_train1)
+#     y = np.array(y_train)
+#     x = torch.tensor(x, dtype=torch.float32)
+#     x1 = torch.tensor(x1, dtype=torch.float32)
+#     y = torch.tensor(y, dtype=torch.float32)
+#
+#     dataset = TensorDataset(x, x1, y)
 
 # Create a DataLoader
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=False)
-    fit(dataloader,5)
+#     dataloader = DataLoader(dataset, batch_size=4, shuffle=False)
+#     fit(dataloader,5)
 # if __name__ == '__main__':
 #  model.load_model(path="C:\\Users\\raman\\PycharmProjects\\pythonProject1\\tensorflow1\\RIFE\\DLSS",rank=0)
 #  image = Image.open("C:\\Users\\raman\\PycharmProjects\\pythonProject1\\tensorflow1\\frame_generation\\rdr2-test\\frame_0000.jpg")
