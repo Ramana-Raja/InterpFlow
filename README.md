@@ -24,7 +24,7 @@ The dependencies include:
 To initialize the frame generator, provide the location of the video file and the desired frames per second (FPS):
 
 ```python
-frame_gen = frame_generator(video_loc="path/to/video.mp4", fps=30)
+frame_gen = frame_generator(fps=30)
 ```
 
 
@@ -33,7 +33,7 @@ frame_gen = frame_generator(video_loc="path/to/video.mp4", fps=30)
 The model can be trained by providing a video and specifying the number of epochs. Training will use the frames extracted from the video.
 
 ```python
-frame_gen.train(epochs=5, freq=500, save_folder="models/")
+frame_gen.train(video_loc="train_video",epochs=5, freq=500, save_folder="models/")
 ```
 
 ### Model Prediction
@@ -41,7 +41,7 @@ frame_gen.train(epochs=5, freq=500, save_folder="models/")
 Once the model is trained, you can use it to generate frames and save them as a video.
 
 ```python
-frame_gen.predict("output_folder/")
+frame_gen.predict(video_dr="video_folder",output_folder="output_folder/")
 ```
 
 ### Acknowledgments
