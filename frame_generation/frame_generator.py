@@ -12,15 +12,15 @@ from frame_generation.loss import device
 
 
 class frame_generator():
-    def __init__(self,fps=30):
+    def __init__(self,fps=60):
         self.model = main_model()
         self.fps = fps
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def create_images(self):
         self.temp_dir = "temp_folder"
-        if os.path.exists(self.temp_dir_output):
-            shutil.rmtree(self.temp_dir_output)
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
         os.makedirs(self.temp_dir, exist_ok=True)
 
         cap = cv2.VideoCapture(self.dr)
@@ -40,52 +40,44 @@ class frame_generator():
                 break
 
         cap.release()
-    def create_images_for_predict(self,batch=1):
-        x_0 = None
-        x_1 = None
-
-        if not self.video_predict or not os.path.exists(self.video_predict):
-            print(f"Invalid or missing video path: {self.video_predict}")
+    def create_images_for_predict(self):
+        if self.frame_position >= self.total_frames:
+            self.cap.release()
             return None, None
 
-        cap = cv2.VideoCapture(self.video_predict)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        if self.frame_position >= total_frames:
-            return None,None
-        print("video captured")
-        cap.set(cv2.CAP_PROP_POS_FRAMES, self.frame_position)
         x_0 = []
         x_1 = []
-        for _ in range(batch):
-            for i in range(2):
-                ret, frame = cap.read()
+
+        for _ in range(self.batch):
+            if self.last_frame is None:
+                ret, frame = self.cap.read()
                 if not ret:
-                    cap.release()
                     return None, None
+                self.last_frame = frame
+                self.frame_position += 1
 
-                # Convert to RGB and resize using PIL
-                image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                image = image.resize((640, 480))
-                image_array = np.array(image).astype('float32') / 255.0
+            ret, frame = self.cap.read()
+            if not ret:
+                return None, None
 
-                # Expand dims to simulate batch if needed
-                image_array = np.expand_dims(image_array, axis=0)
-                if i == 0:
-                    x_0.append(image_array)
-                else:
-                    x_1.append(image_array)
+            img0 = Image.fromarray(cv2.cvtColor(self.last_frame, cv2.COLOR_BGR2RGB))
+            img1 = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
+            img0 = img0.resize((640, 480))
+            img1 = img1.resize((640, 480))
+
+            arr0 = np.array(img0).astype('float32') / 255.0
+            arr1 = np.array(img1).astype('float32') / 255.0
+
+            x_0.append(arr0)
+            x_1.append(arr1)
+
+            self.last_frame = frame
             self.frame_position += 1
 
-        cap.release()
-        x_0 = np.array(x_0)
-        x_1 = np.array(x_1)
-        print(x_0.shape)
-        exit(0)
-        x_0 = torch.tensor(x_0, dtype=torch.float32).to(device)
-        x_1 = torch.tensor(x_1, dtype=torch.float32).to(device)
-        return x_0.permute(0, 3, 1, 2), x_1.permute(0, 3, 1, 2)
-
+        x_0 = torch.tensor(np.array(x_0), dtype=torch.float32).permute(0, 3, 1, 2).to(device)
+        x_1 = torch.tensor(np.array(x_1), dtype=torch.float32).permute(0, 3, 1, 2).to(device)
+        return x_0, x_1
     def delete_files(self):
         for filename in os.listdir(self.temp_dir):
             file_path = os.path.join(self.temp_dir, filename)
@@ -187,45 +179,58 @@ class frame_generator():
 
     def load_model(self,loc=""):
         self.model.load_model(path=loc,rank=0)
-    def predict(self,output_folder,video_dr=""):
-        self.frame_position = 0
+
+
+    def save_images_on_batch(self,x,temp,x_1):
+        for i in range(self.batch):
+            if self.j == 0:
+                cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x[i])
+                self.j += 1
+            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), temp[i])
+            self.j += 1
+            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
+            self.j += 1
+    def predict(self,output_folder,video_dr="",batch=1):
+        self.batch = batch
+        self.j = 0
+        self.frame_position = 300
         self.video_predict = video_dr
         self.temp_dir_output = "temp_output"
+        self.cap = cv2.VideoCapture(self.video_predict)
+        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.last_frame = None
         if os.path.exists(self.temp_dir_output):
             shutil.rmtree(self.temp_dir_output)
         os.makedirs(self.temp_dir_output, exist_ok=True)
-        j=0
         while True:
-            x , x_1 =self.create_images_for_predict(batch=64)
+            x , x_1 =self.create_images_for_predict()
             if x is None or x_1 is None:
                 break
 
             temp = self.model.inference(x, x_1)
 
             temp = temp.permute(0, 2, 3, 1)
-            temp = temp[0].detach().cpu().numpy()
+            temp = temp.detach().cpu().numpy()
 
             x = x.permute(0, 2, 3, 1)
-            x = x[0].detach().cpu().numpy()
+            x = x.detach().cpu().numpy()
 
             x_1 = x_1.permute(0, 2, 3, 1)
-            x_1 = x_1[0].detach().cpu().numpy()
+            x_1 = x_1.detach().cpu().numpy()
 
             temp = (temp * 255).clip(0, 255).astype(np.uint8)
             x = (x * 255).clip(0, 255).astype(np.uint8)
             x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
             print(x[0].shape)
-            temp = cv2.cvtColor(temp, cv2.COLOR_RGB2BGR)
-            x = cv2.cvtColor(x, cv2.COLOR_RGB2BGR)
-            x_1 = cv2.cvtColor(x_1, cv2.COLOR_RGB2BGR)
-            if j==0:
-                cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), x)
-                j +=1
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), temp)
-            j+=1
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), x_1)
-            j+=1
-        images = [img for img in os.listdir(self.temp_dir_output) if img.endswith(".jpg") or img.endswith(".png")]
+            temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
+            x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
+            x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+            self.save_images_on_batch(x=x,temp=temp,x_1=x_1)
+        images = sorted(
+            [img for img in os.listdir(self.temp_dir_output) if img.endswith(".jpg") or img.endswith(".png")],
+            key=lambda x: int(os.path.splitext(x)[0])
+        )
+
         print(len(images))
         first_image = cv2.imread(os.path.join(self.temp_dir_output, images[0]))
         height, width, _ = first_image.shape
@@ -240,7 +245,10 @@ class frame_generator():
 
         video_writer.release()
 
-m = frame_generator()
-m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_model")
-m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
-          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video")
+# m = frame_generator()
+# m.fit(video_loc="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
+# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
+# m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+#           batch=8)

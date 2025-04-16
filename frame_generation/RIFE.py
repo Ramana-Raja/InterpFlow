@@ -224,13 +224,11 @@ class Model:
         pred, mask, merged_img, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt = self.predict(
             imgs, flow, flow_gt=flow_gt)
         loss_ter = self.ter(pred, gt).mean()
-        loss_cons=0
-        loss_flow=0
-        loss_mask=0
+
         loss_l1 = (((pred - gt) ** 2 + 1e-6) ** 0.5).mean()
         if training:
             self.optimG.zero_grad()
-            loss_G = loss_l1 + loss_cons + loss_ter
+            loss_G = loss_l1 + loss_ter*(1.5)
             loss_G.backward()
             self.optimG.step()
         # return pred, merged_img, flow, loss_l1, loss_flow, loss_cons, loss_ter, loss_mask
