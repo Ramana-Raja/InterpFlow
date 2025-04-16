@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 
 
 class frame_generator():
-    def __init__(self,video_loc="",fps=30):
-        self.dr = video_loc
+    def __init__(self,fps=30):
+
         self.model = main_model()
         self.fps = fps
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -40,6 +40,32 @@ class frame_generator():
                 break
 
         cap.release()
+    def create_images_for_predict(self):
+        x_0 = None
+        x_1 = None
+
+        cap = cv2.VideoCapture(self.video_predict)
+
+        cap.set(cv2.CAP_PROP_POS_FRAMES, self.frame_position)
+
+        ret, frame = cap.read()
+        if ret:
+            x_0 = np.array(frame)
+            self.frame_position += 1
+
+        ret, frame = cap.read()
+        if ret:
+            x_1 = np.array(frame)
+            self.frame_position += 1
+
+        cap.release()
+
+        if x_0 is not None and x_1 is not None:
+            x_0 = torch.tensor(x_0, dtype=torch.float32)
+            x_1 = torch.tensor(x_1, dtype=torch.float32)
+            return x_0, x_1
+        else:
+            return None, None
 
     def delete_files(self):
         for filename in os.listdir(self.temp_dir):
@@ -74,7 +100,6 @@ class frame_generator():
                         i = 0
                     image.close()
                 j = j+1
-                print(j)
         x = np.array(x_train)
         x1 = np.array(x_train1)
         y = np.array(y_train)
@@ -104,8 +129,8 @@ class frame_generator():
                 image.close()
         x = np.array(x_test)
         y = np.array(y_test)
-        x = torch.tensor(x, dtype=torch.float32)
-        y = torch.tensor(y, dtype=torch.float32)
+        x = torch.tensor(x, dtype=torch.float32).to(self.device)
+        y = torch.tensor(y, dtype=torch.float32).to(self.device)
         return x , y
 
     def generate_images(self,prediction, test_input,test_input2, tar):
@@ -136,7 +161,8 @@ class frame_generator():
             plt.imshow(display_list[i] * 0.5 + 0.5)
             plt.axis('off')
         plt.show()
-    def train(self,epochs=5,freq=500,save_folder=None):
+    def fit(self,epochs=5,freq=500,save_folder=None,video_loc=""):
+        self.dr = video_loc
         self.create_images()
         self.make_nparray_for_train()
         for j in range(epochs):
@@ -161,19 +187,25 @@ class frame_generator():
         if (save_folder):
             self.model.save_model(path=save_folder,
                          rank=0)
-    def predict(self,output_folder):
+    def predict(self,output_folder,video_dr=""):
+        self.frame_position = 0
+        self.video_predict = video_dr
         self.temp_dir_output = "temp_output"
         os.makedirs(self.temp_dir_output, exist_ok=True)
-        x , y = self.make_ndarray_for_predict()
         j=0
-        for i in range(len(x)):
-            temp = self.model.inference(x[i], y[i])
-
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), x[i])
+        while True:
+            x , x_1 =self.create_images_for_predict()
+            if x is None or x_1 is None:
+                break
+            temp = self.model.inference(x, x_1)
+            temp = temp.detach().cpu().numpy()
+            x = x.detach().cpu().numpy()
+            x_1 = x_1.detach().cpu().numpy()
+            cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), x)
             j +=1
             cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), temp)
             j+=1
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), y[i])
+            cv2.imwrite(os.path.join(self.temp_dir_output, f"{j}.png"), x_1)
             j+=1
         images = [img for img in os.listdir(self.temp_dir_output) if img.endswith(".jpg") or img.endswith(".png")]
         first_image = cv2.imread(os.path.join(self.temp_dir_output, images[0]))
