@@ -48,7 +48,7 @@ class frame_generator():
         for filename in os.listdir(self.temp_dir_output):
             file_path = os.path.join(self.temp_dir, filename)
             os.remove(file_path)
-    def make_nparray_for_train(self):
+    def make_nparray_for_train_test(self):
         x_train = []
         x_train1 = []
         y_train = []
