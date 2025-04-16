@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 import time
 import matplotlib.pyplot as plt
-
+import shutil
 from frame_generation.loss import device
 
 
@@ -19,7 +19,8 @@ class frame_generator():
 
     def create_images(self):
         self.temp_dir = "temp_folder"
-
+        if os.path.exists(self.temp_dir_output):
+            shutil.rmtree(self.temp_dir_output)
         os.makedirs(self.temp_dir, exist_ok=True)
 
         cap = cv2.VideoCapture(self.dr)
@@ -180,10 +181,16 @@ class frame_generator():
         if (save_folder):
             self.model.save_model(path=save_folder,
                          rank=0)
+
+    def load_model(self,loc=""):
+        self.model.load_model(path=loc,rank=0)
+
     def predict(self,output_folder,video_dr=""):
         self.frame_position = 0
         self.video_predict = video_dr
         self.temp_dir_output = "temp_output"
+        if os.path.exists(self.temp_dir_output):
+            shutil.rmtree(self.temp_dir_output)
         os.makedirs(self.temp_dir_output, exist_ok=True)
         j=0
         while True:
@@ -232,9 +239,6 @@ class frame_generator():
         video_writer.release()
 
 # m = frame_generator()
-# m.fit(video_loc="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
-#       freq=0,
-#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_model",
-#       epochs=10)
-# m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_model")
+# m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
 #           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video")
