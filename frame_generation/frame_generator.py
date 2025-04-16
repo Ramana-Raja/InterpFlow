@@ -40,7 +40,7 @@ class frame_generator():
                 break
 
         cap.release()
-    def create_images_for_predict(self):
+    def create_images_for_predict(self,batch=1):
         x_0 = None
         x_1 = None
 
@@ -54,30 +54,34 @@ class frame_generator():
             return None,None
         print("video captured")
         cap.set(cv2.CAP_PROP_POS_FRAMES, self.frame_position)
+        x_0 = []
+        x_1 = []
+        for _ in range(batch):
+            for i in range(2):
+                ret, frame = cap.read()
+                if not ret:
+                    cap.release()
+                    return None, None
 
-        for i in range(2):
-            ret, frame = cap.read()
-            if not ret:
-                cap.release()
-                return None, None
+                # Convert to RGB and resize using PIL
+                image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                image = image.resize((640, 480))
+                image_array = np.array(image).astype('float32') / 255.0
 
-            # Convert to RGB and resize using PIL
-            image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            image = image.resize((640, 480))
-            image_array = np.array(image).astype('float32') / 255.0
+                # Expand dims to simulate batch if needed
+                image_array = np.expand_dims(image_array, axis=0)
+                if i == 0:
+                    x_0.append(image_array)
+                else:
+                    x_1.append(image_array)
 
-            # Expand dims to simulate batch if needed
-            image_array = np.expand_dims(image_array, axis=0)
-            if i == 0:
-                x_0 = image_array
-            else:
-                x_1 = image_array
-
-        self.frame_position += 1
+            self.frame_position += 1
 
         cap.release()
-
-        # Convert to torch tensors
+        x_0 = np.array(x_0)
+        x_1 = np.array(x_1)
+        print(x_0.shape)
+        exit(0)
         x_0 = torch.tensor(x_0, dtype=torch.float32).to(device)
         x_1 = torch.tensor(x_1, dtype=torch.float32).to(device)
         return x_0.permute(0, 3, 1, 2), x_1.permute(0, 3, 1, 2)
@@ -117,7 +121,6 @@ class frame_generator():
                 j = j+1
 
         x = np.array(x_train)
-        print(x.shape)
         x1 = np.array(x_train1)
         y = np.array(y_train)
         x = torch.tensor(x, dtype=torch.float32)
@@ -184,7 +187,6 @@ class frame_generator():
 
     def load_model(self,loc=""):
         self.model.load_model(path=loc,rank=0)
-
     def predict(self,output_folder,video_dr=""):
         self.frame_position = 0
         self.video_predict = video_dr
@@ -194,7 +196,7 @@ class frame_generator():
         os.makedirs(self.temp_dir_output, exist_ok=True)
         j=0
         while True:
-            x , x_1 =self.create_images_for_predict()
+            x , x_1 =self.create_images_for_predict(batch=64)
             if x is None or x_1 is None:
                 break
 
@@ -238,7 +240,7 @@ class frame_generator():
 
         video_writer.release()
 
-# m = frame_generator()
-# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_model")
-# m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
-#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video")
+m = frame_generator()
+m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_model")
+m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
+          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video")
