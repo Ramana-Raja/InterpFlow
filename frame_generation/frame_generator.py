@@ -78,13 +78,12 @@ class frame_generator():
         x_0 = torch.tensor(np.array(x_0), dtype=torch.float32).permute(0, 3, 1, 2).to(device)
         x_1 = torch.tensor(np.array(x_1), dtype=torch.float32).permute(0, 3, 1, 2).to(device)
         return x_0, x_1
-    def delete_files(self):
-        for filename in os.listdir(self.temp_dir):
-            file_path = os.path.join(self.temp_dir, filename)
-            os.remove(file_path)
-        for filename in os.listdir(self.temp_dir_output):
-            file_path = os.path.join(self.temp_dir, filename)
-            os.remove(file_path)
+    def delete_files_train(self):
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
+    def delete_files_predict(self):
+        if os.path.exists(self.temp_dir_output):
+            shutil.rmtree(self.temp_dir_output)
     def make_nparray_for_train(self):
         x_train = []
         x_train1 = []
@@ -176,6 +175,7 @@ class frame_generator():
         if (save_folder):
             self.model.save_model(path=save_folder,
                          rank=0)
+        self.delete_files_train()
 
     def load_model(self,loc=""):
         self.model.load_model(path=loc,rank=0)
@@ -244,7 +244,7 @@ class frame_generator():
             video_writer.write(image)
 
         video_writer.release()
-
+        self.delete_files_predict()
 # m = frame_generator()
 # m.fit(video_loc="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
 #       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
