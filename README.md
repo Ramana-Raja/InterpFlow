@@ -14,7 +14,6 @@ The dependencies include:
 - `torch`
 - `opencv-python`
 - `PIL`
-- `matplotlib`
 - `numpy`
 
 ## Usage
