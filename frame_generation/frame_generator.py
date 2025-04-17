@@ -9,7 +9,7 @@ import time
 import matplotlib.pyplot as plt
 import shutil
 from frame_generation.loss import device
-
+from frame_generation.test_onnx import TRTInference
 
 class frame_generator():
     def __init__(self,fps=60):
@@ -78,9 +78,10 @@ class frame_generator():
             self.last_frame = frame
             self.frame_position += 1
 
-        x_0 = torch.tensor(np.array(x_0), dtype=torch.float32).permute(0, 3, 1, 2).to(device)
-        x_1 = torch.tensor(np.array(x_1), dtype=torch.float32).permute(0, 3, 1, 2).to(device)
-        return x_0, x_1
+        x_0 = np.array(x_0).transpose(0, 3, 1, 2)  # Change shape to (N, C, H, W)
+        x_1 = np.array(x_1).transpose(0, 3, 1, 2)  # Change shape to (N, C, H, W)
+
+        return x_0,x_1
     def delete_files_train(self):
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
@@ -196,6 +197,9 @@ class frame_generator():
             cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
             self.j += 1
     def predict(self,output_folder,video_dr="",batch=1):
+        trt_model = TRTInference(
+            "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\path_to_save_model.trt")
+
         self.batch = batch
         self.j = 0
         self.frame_position = 300
@@ -212,17 +216,14 @@ class frame_generator():
 
             if x is None or x_1 is None:
                 break
-            print(x.shape)
-            temp = self.model.inference(x, x_1)
 
-            temp = temp.permute(0, 2, 3, 1)
-            temp = temp.detach().cpu().numpy()
+            result = np.concatenate((x, x_1), axis=1)
 
-            x = x.permute(0, 2, 3, 1)
-            x = x.detach().cpu().numpy()
-
-            x_1 = x_1.permute(0, 2, 3, 1)
-            x_1 = x_1.detach().cpu().numpy()
+            temp = trt_model.infer(result)
+            print(temp.shape)
+            temp = np.transpose(temp, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+            x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+            x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
 
             temp = (temp * 255).clip(0, 255).astype(np.uint8)
             x = (x * 255).clip(0, 255).astype(np.uint8)
@@ -253,7 +254,7 @@ m = frame_generator()
 # m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
 #       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model",
 #       batch=8)
-m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
+# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
 m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
           batch=16)

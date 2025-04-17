@@ -127,8 +127,9 @@ def get_learning_rate(step, total_steps=3000):
     else:
         mul = np.cos((step - 2000) / (total_steps - 2000.) * math.pi) * 0.5 + 0.5
         return (3e-4 - 3e-6) * mul + 3e-6
-class Model:
+class Model(nn.Module):
     def __init__(self, local_rank=-1):
+        super(Model, self).__init__()
         self.flownet = IFNet()
         self.contextnet = ContextNet()
         self.fusionnet = FusionNet()
@@ -150,7 +151,7 @@ class Model:
             self.fusionnet = DDP(self.fusionnet, device_ids=[
                                  local_rank], output_device=local_rank)
 
-    def train(self):
+    def train_1(self):
         self.flownet.train()
         self.contextnet.train()
         self.fusionnet.train()
@@ -208,16 +209,18 @@ class Model:
         else:
             return pred
 
-    def inference(self, img0, img1, scale=1.0):
-        imgs = torch.cat((img0, img1), 1)
-        flow, _ = self.flownet(imgs, scale)
+    def inference(self, img0, scale=1.0):
+        # imgs = torch.cat((img0, img1), 1)
+        flow, _ = self.flownet(img0, scale)
+        return self.predict(img0, flow, training=False)
+    def forward(self,imgs):
+        flow, _ = self.flownet(imgs, 1)
         return self.predict(imgs, flow, training=False)
-
     def update(self, imgs, gt, learning_rate=0, mul=1, training=True, flow_gt=None):
         for param_group in self.optimG.param_groups:
             param_group['lr'] = learning_rate
         if training:
-            self.train()
+            self.train_1()
         else:
             self.eval()
         flow, flow_list = self.flownet(imgs)
