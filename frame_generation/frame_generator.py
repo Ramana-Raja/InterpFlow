@@ -20,7 +20,6 @@ class frame_generator():
     def create_images(self):
         self.temp_dir = "temp_folder"
         if os.path.exists(self.temp_dir):
-            return
             shutil.rmtree(self.temp_dir)
         os.makedirs(self.temp_dir, exist_ok=True)
 
@@ -60,13 +59,18 @@ class frame_generator():
             ret, frame = self.cap.read()
             if not ret:
                 return None, None
+            target_width = 640
+            target_height = 480
 
-            img0 = Image.fromarray(cv2.cvtColor(self.last_frame, cv2.COLOR_BGR2RGB))
-            img1 = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            img0 = cv2.resize(self.last_frame, (target_width, target_height))
+            img1 = cv2.resize(frame, (target_width, target_height))
+
+            img0 = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB)
+            img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
 
 
-            arr0 = np.array(img0).astype('float32') / 255.0
-            arr1 = np.array(img1).astype('float32') / 255.0
+            arr0 = np.array(img0).astype('float16') / 255.0
+            arr1 = np.array(img1).astype('float16') / 255.0
 
             x_0.append(arr0)
             x_1.append(arr1)
@@ -119,7 +123,7 @@ class frame_generator():
         y = torch.tensor(y, dtype=torch.float32)
 
         dataset = TensorDataset(x, x1, y)
-        self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
+        self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False, num_workers=self.num_workers)
 
     def generate_images(self,prediction, test_input,test_input2, tar):
         prediction = prediction.permute(0, 2, 3, 1)
@@ -149,7 +153,8 @@ class frame_generator():
             plt.imshow(display_list[i] * 0.5 + 0.5)
             plt.axis('off')
         plt.show()
-    def fit(self,epochs=5,freq=500,save_folder=None,video_loc="",batch=2):
+    def fit(self,epochs=5,freq=500,save_folder=None,video_loc="",batch=2,num_workers=4):
+        self.num_workers = num_workers
         self.batch = batch
         self.dr = video_loc
         self.create_images()
@@ -181,7 +186,6 @@ class frame_generator():
     def load_model(self,loc=""):
         self.model.load_model(path=loc,rank=0)
 
-
     def save_images_on_batch(self,x,temp,x_1):
         for i in range(self.batch):
             if self.j == 0:
@@ -205,9 +209,10 @@ class frame_generator():
         os.makedirs(self.temp_dir_output, exist_ok=True)
         while True:
             x , x_1 =self.create_images_for_predict()
+
             if x is None or x_1 is None:
                 break
-
+            print(x.shape)
             temp = self.model.inference(x, x_1)
 
             temp = temp.permute(0, 2, 3, 1)
@@ -222,7 +227,6 @@ class frame_generator():
             temp = (temp * 255).clip(0, 255).astype(np.uint8)
             x = (x * 255).clip(0, 255).astype(np.uint8)
             x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
-            print(x[0].shape)
             temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
             x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
             x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
@@ -252,4 +256,4 @@ m = frame_generator()
 m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
 m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-          batch=2)
+          batch=16)
