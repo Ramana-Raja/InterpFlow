@@ -20,6 +20,7 @@ class frame_generator():
     def create_images(self):
         self.temp_dir = "temp_folder"
         if os.path.exists(self.temp_dir):
+            return
             shutil.rmtree(self.temp_dir)
         os.makedirs(self.temp_dir, exist_ok=True)
 
@@ -63,8 +64,6 @@ class frame_generator():
             img0 = Image.fromarray(cv2.cvtColor(self.last_frame, cv2.COLOR_BGR2RGB))
             img1 = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
-            img0 = img0.resize((640, 480))
-            img1 = img1.resize((640, 480))
 
             arr0 = np.array(img0).astype('float32') / 255.0
             arr1 = np.array(img1).astype('float32') / 255.0
@@ -91,8 +90,9 @@ class frame_generator():
         i = 0
         j =0
         for filename in os.listdir(self.temp_dir):
-                if j>1000:
-                    break
+                if j<2700:
+                    j +=1
+                    continue
                 if filename.endswith(".jpg") or filename.endswith(".png"):
                     image = Image.open(os.path.join(self.temp_dir, filename))
                     image = image.resize((640, 480))
@@ -119,7 +119,7 @@ class frame_generator():
         y = torch.tensor(y, dtype=torch.float32)
 
         dataset = TensorDataset(x, x1, y)
-        self.dataloader = DataLoader(dataset, batch_size=4, shuffle=False)
+        self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
 
     def generate_images(self,prediction, test_input,test_input2, tar):
         prediction = prediction.permute(0, 2, 3, 1)
@@ -149,7 +149,8 @@ class frame_generator():
             plt.imshow(display_list[i] * 0.5 + 0.5)
             plt.axis('off')
         plt.show()
-    def fit(self,epochs=5,freq=500,save_folder=None,video_loc=""):
+    def fit(self,epochs=5,freq=500,save_folder=None,video_loc="",batch=2):
+        self.batch = batch
         self.dr = video_loc
         self.create_images()
         self.make_nparray_for_train()
@@ -231,7 +232,6 @@ class frame_generator():
             key=lambda x: int(os.path.splitext(x)[0])
         )
 
-        print(len(images))
         first_image = cv2.imread(os.path.join(self.temp_dir_output, images[0]))
         height, width, _ = first_image.shape
         output_video_path = os.path.join(output_folder, "output_video.mp4")
@@ -245,10 +245,11 @@ class frame_generator():
 
         video_writer.release()
         self.delete_files_predict()
-# m = frame_generator()
-# m.fit(video_loc="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
-#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
-# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
-# m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
-#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-#           batch=8)
+m = frame_generator()
+# m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
+#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model",
+#       batch=8)
+m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
+m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+          batch=2)
