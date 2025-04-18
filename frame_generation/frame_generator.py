@@ -59,8 +59,8 @@ class frame_generator():
             ret, frame = self.cap.read()
             if not ret:
                 return None, None
-            target_width = 640
-            target_height = 480
+            target_width = 1280
+            target_height = 720
 
             img0 = cv2.resize(self.last_frame, (target_width, target_height))
             img1 = cv2.resize(frame, (target_width, target_height))
@@ -69,8 +69,8 @@ class frame_generator():
             img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
 
 
-            arr0 = np.array(img0).astype('float16') / 255.0
-            arr1 = np.array(img1).astype('float16') / 255.0
+            arr0 = np.array(img0).astype('float32') / 255.0
+            arr1 = np.array(img1).astype('float32') / 255.0
 
             x_0.append(arr0)
             x_1.append(arr1)
@@ -154,6 +154,41 @@ class frame_generator():
             plt.imshow(display_list[i] * 0.5 + 0.5)
             plt.axis('off')
         plt.show()
+    def export_model_to_onnx(self,output_path, img_size=(720, 1280),batch=4):
+        model = self.model
+        model.eval()
+
+        dummy_input = torch.randn(batch, 6, img_size[0], img_size[1]).cuda()
+        torch.onnx.export(
+        model,
+        dummy_input,
+        output_path,
+        export_params=True,
+        opset_version=16,
+        do_constant_folding=True,
+        input_names=['input'],
+        output_names=['output'],
+        )
+
+        print(f"ONNX model exported to: {output_path}")
+    def build_rtr_engine(self,onnx_path):
+        from frame_generation.real import EngineBuilder
+
+          # Change to your ONNX model path
+        onnx_model_path = onnx_path
+        engine_file_path = "model.trt"  # Change to your desired output path
+        precision_mode = "fp16"  # Choose "fp16" or "fp32"
+        use_int8_precision = False  # Set to True if you want to use INT8 (ensure your hardware supports it)
+        workspace_size_gb = 10  # Max memory workspace in GB for optimization
+        verbose_logging = True  # Enable verbose logging for detailed output
+
+        builder = EngineBuilder(verbose=verbose_logging, workspace=workspace_size_gb)
+
+        # Load the ONNX model and create the TensorRT engine
+        if builder.create_network(onnx_model_path):
+            builder.create_engine(engine_file_path, precision=precision_mode, use_int8=use_int8_precision)
+
+
     def fit(self,epochs=5,freq=500,save_folder=None,video_loc="",batch=2,num_workers=4):
         self.num_workers = num_workers
         self.batch = batch
@@ -196,9 +231,9 @@ class frame_generator():
             self.j += 1
             cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
             self.j += 1
-    def predict(self,output_folder,video_dr="",batch=1):
-        trt_model = TRTInference(
-            "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\path_to_save_model.trt")
+    def predict(self,output_folder,video_dr="",batch=1,path_to_trt=None):
+        if (path_to_trt):
+            trt_model = TRTInference(path_to_trt)
 
         self.batch = batch
         self.j = 0
@@ -211,27 +246,58 @@ class frame_generator():
         if os.path.exists(self.temp_dir_output):
             shutil.rmtree(self.temp_dir_output)
         os.makedirs(self.temp_dir_output, exist_ok=True)
-        while True:
-            x , x_1 =self.create_images_for_predict()
 
-            if x is None or x_1 is None:
-                break
+        if path_to_trt:
+            while True:
+                x, x_1 = self.create_images_for_predict()
 
-            result = np.concatenate((x, x_1), axis=1)
+                if x is None or x_1 is None:
+                    break
 
-            temp = trt_model.infer(result)
-            print(temp.shape)
-            temp = np.transpose(temp, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-            x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-            x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                result = np.concatenate((x, x_1), axis=1)
 
-            temp = (temp * 255).clip(0, 255).astype(np.uint8)
-            x = (x * 255).clip(0, 255).astype(np.uint8)
-            x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
-            temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
-            x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
-            x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
-            self.save_images_on_batch(x=x,temp=temp,x_1=x_1)
+                temp = trt_model.infer(result)
+                print(temp.shape)
+                temp = np.transpose(temp, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+
+                temp = (temp * 255).clip(0, 255).astype(np.uint8)
+                x = (x * 255).clip(0, 255).astype(np.uint8)
+                x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+                temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
+                x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
+                x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+                self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
+
+        else:
+            while True:
+                x, x_1 = self.create_images_for_predict()
+
+                if x is None or x_1 is None:
+                    break
+
+                result = np.concatenate((x, x_1), axis=1)
+                tensor = torch.tensor(result).to(self.device)
+                temp = self.model.inference(tensor)
+                print(temp.shape)
+
+                temp = temp.permute(0, 2, 3, 1)
+                temp = temp.detach().cpu().numpy()
+
+
+                x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+
+                temp = (temp * 255).clip(0, 255).astype(np.uint8)
+                x = (x * 255).clip(0, 255).astype(np.uint8)
+                x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+                temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
+                x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
+                x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+                self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
+
+
         images = sorted(
             [img for img in os.listdir(self.temp_dir_output) if img.endswith(".jpg") or img.endswith(".png")],
             key=lambda x: int(os.path.splitext(x)[0])
@@ -250,11 +316,33 @@ class frame_generator():
 
         video_writer.release()
         self.delete_files_predict()
-m = frame_generator()
-# m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
-#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model",
-#       batch=8)
+# m = frame_generator()
+# # m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
+# #       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model",
+# #       batch=8)
 # m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
-m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
-          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-          batch=16)
+# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\model.trt"
+# s = time.time()
+# m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+#           batch=8,
+#           path_to_trt=trt)
+# e = time.time()
+#
+# print(e-s)
+# import time
+# s = time.time()
+# n = m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+#           batch=8)
+# e = time.time()
+#
+# print(e-s)
+# # WORKING_DIR = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation"
+# # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
+# # ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model.onnx')
+# # m.export_model_to_onnx(ONNX_MODEL_PATH,batch=8)
+# # onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model.onnx"
+# # m.build_rtr_engine(onnx_model_path)
+
+
