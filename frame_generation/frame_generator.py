@@ -274,9 +274,6 @@ class frame_generator():
         os.makedirs(self.temp_dir_output, exist_ok=True)
 
         if path_to_trt:
-            if self.trt_0 != output_width or self.trt_1!= output_height:
-                raise ValueError(f"Incompatible output dimensions: expected ({self.trt_1}, {self.trt_0}), "
-                                 f"but got ({output_height}, {output_width})")
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width,height=output_height)
                 if x is None or x_1 is None:
