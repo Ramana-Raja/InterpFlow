@@ -40,44 +40,68 @@ class frame_generator():
                 break
 
         cap.release()
-    def create_images_for_predict(self):
+    def create_images_for_predict(self,width=None,height=None):
         if self.frame_position >= self.total_frames:
             self.cap.release()
             return None, None
 
         x_0 = []
         x_1 = []
+        if width != None and height != None:
+            target_width = width
+            target_height = height
 
-        for _ in range(self.batch):
-            if self.last_frame is None:
+
+            for _ in range(self.batch):
+                if self.last_frame is None:
+                    ret, frame = self.cap.read()
+                    if not ret:
+                        return None, None
+                    self.last_frame = frame
+                    self.frame_position += 1
+
                 ret, frame = self.cap.read()
                 if not ret:
                     return None, None
+
+                img0 = cv2.resize(self.last_frame, (target_width, target_height))
+                img1 = cv2.resize(frame, (target_width, target_height))
+
+                img0 = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB)
+                img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+
+                arr0 = np.array(img0).astype('float32') / 255.0
+                arr1 = np.array(img1).astype('float32') / 255.0
+
+                x_0.append(arr0)
+                x_1.append(arr1)
+
                 self.last_frame = frame
                 self.frame_position += 1
+        else:
+            for _ in range(self.batch):
+                if self.last_frame is None:
+                    ret, frame = self.cap.read()
+                    if not ret:
+                        return None, None
+                    self.last_frame = frame
+                    self.frame_position += 1
 
-            ret, frame = self.cap.read()
-            if not ret:
-                return None, None
-            target_width = 1280
-            target_height = 720
+                ret, frame = self.cap.read()
+                if not ret:
+                    return None, None
 
-            img0 = cv2.resize(self.last_frame, (target_width, target_height))
-            img1 = cv2.resize(frame, (target_width, target_height))
+                img0 = cv2.cvtColor(self.last_frame, cv2.COLOR_BGR2RGB)
+                img1 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-            img0 = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB)
-            img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+                arr0 = np.array(img0).astype('float32') / 255.0
+                arr1 = np.array(img1).astype('float32') / 255.0
 
+                x_0.append(arr0)
+                x_1.append(arr1)
 
-            arr0 = np.array(img0).astype('float32') / 255.0
-            arr1 = np.array(img1).astype('float32') / 255.0
-
-            x_0.append(arr0)
-            x_1.append(arr1)
-
-            self.last_frame = frame
-            self.frame_position += 1
-
+                self.last_frame = frame
+                self.frame_position += 1
         x_0 = np.array(x_0).transpose(0, 3, 1, 2)  # Change shape to (N, C, H, W)
         x_1 = np.array(x_1).transpose(0, 3, 1, 2)  # Change shape to (N, C, H, W)
 
@@ -231,7 +255,7 @@ class frame_generator():
             self.j += 1
             cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
             self.j += 1
-    def predict(self,output_folder,video_dr="",batch=1,path_to_trt=None):
+    def predict(self,output_folder,video_dr="",batch=1,path_to_trt=None,output_width=1280,output_height=720):
         if (path_to_trt):
             trt_model = TRTInference(path_to_trt)
 
