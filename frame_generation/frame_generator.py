@@ -248,15 +248,6 @@ class frame_generator():
     def load_model(self,loc=""):
         self.model.load_model(path=loc,rank=0)
 
-    def save_images_on_batch(self,x,temp,x_1):
-        for i in range(self.batch):
-            if self.j == 0:
-                cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x[i])
-                self.j += 1
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), temp[i])
-            self.j += 1
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
-            self.j += 1
     def predict(self,output_folder,video_dr="",batch=1,path_to_trt=None,output_width=1280,output_height=720):
         if (path_to_trt):
             trt_model = TRTInference(path_to_trt)
