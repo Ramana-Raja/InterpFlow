@@ -1,4 +1,5 @@
-from RIFE import Model as main_model , get_learning_rate
+from RIFE import Model as main_model
+from RIFE import get_learning_rate
 import cv2
 import os
 from PIL import Image
@@ -8,7 +9,6 @@ from torch.utils.data import DataLoader, TensorDataset
 import time
 import matplotlib.pyplot as plt
 import shutil
-from frame_generation.loss import device
 from frame_generation.test_onnx import TRTInference
 
 class frame_generator():
@@ -17,10 +17,13 @@ class frame_generator():
         self.fps = fps
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def create_images(self):
+    def create_images(self,delete_previous=True):
         self.temp_dir = "temp_folder"
         if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
+            if delete_previous:
+                shutil.rmtree(self.temp_dir)
+            else:
+                return
         os.makedirs(self.temp_dir, exist_ok=True)
 
         cap = cv2.VideoCapture(self.dr)
@@ -111,19 +114,33 @@ class frame_generator():
     def delete_files_predict(self):
         if os.path.exists(self.temp_dir_output):
             shutil.rmtree(self.temp_dir_output)
-    def make_nparray_for_train(self):
+    def make_nparray_for_train(self,
+                               max_frames=1000,
+                               start_frame=0,
+                               width=640,
+                               height=480):
         x_train = []
         x_train1 = []
         y_train = []
         i = 0
         j =0
-        for filename in os.listdir(self.temp_dir):
-                if j<2700:
+        print(start_frame)
+        print(max_frames)
+        max_frames = start_frame + max_frames
+        print(max_frames)
+        if width and height:
+
+            for filename in os.listdir(self.temp_dir):
+
+                if j < start_frame:
                     j +=1
                     continue
+                if j > max_frames:
+                    break
                 if filename.endswith(".jpg") or filename.endswith(".png"):
+                    print(j)
                     image = Image.open(os.path.join(self.temp_dir, filename))
-                    image = image.resize((640, 480))
+                    image = image.resize((width, height))
                     image = image.convert("RGB")
                     image_array = np.array(image)
                     image_array = (image_array / 255.0).astype('float32')
@@ -137,17 +154,42 @@ class frame_generator():
                         x_train1.append(image_array)
                         i = 0
                     image.close()
-                j = j+1
-
+                j = j + 1
+        else:
+            print("hello")
+            for filename in os.listdir(self.temp_dir):
+                if j < start_frame:
+                    continue
+                if j > max_frames:
+                    break
+                if filename.endswith(".jpg") or filename.endswith(".png"):
+                    image = Image.open(os.path.join(self.temp_dir, filename))
+                    image = image.convert("RGB")
+                    image_array = np.array(image)
+                    image_array = (image_array / 255.0).astype('float32')
+                    if (i == 0):
+                        x_train.append(image_array)
+                        i = i + 1
+                    if (i == 1):
+                        y_train.append(image_array)
+                        i = i + 1
+                    if (i == 2):
+                        x_train1.append(image_array)
+                        i = 0
+                    image.close()
+                j = j + 1
+        print(j)
         x = np.array(x_train)
         x1 = np.array(x_train1)
         y = np.array(y_train)
         x = torch.tensor(x, dtype=torch.float32)
         x1 = torch.tensor(x1, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.float32)
-
+        print(x.shape)
+        print(x1.shape)
+        print(y.shape)
         dataset = TensorDataset(x, x1, y)
-        self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False, num_workers=self.num_workers)
+        self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
 
     def generate_images(self,prediction, test_input,test_input2, tar):
         prediction = prediction.permute(0, 2, 3, 1)
@@ -214,12 +256,25 @@ class frame_generator():
             builder.create_engine(engine_file_path, precision=precision_mode, use_int8=use_int8_precision)
 
 
-    def fit(self,epochs=5,freq=500,save_folder=None,video_loc="",batch=2,num_workers=4):
-        self.num_workers = num_workers
+    def fit(self,
+            epochs=5,
+            freq=500,
+            save_folder=None,
+            video_loc="",
+            batch=2,
+            num_workers=4,
+            delete_previous=True,
+            start_frame=0,
+            max_frames=1000,
+            width=None,
+            height=None):
         self.batch = batch
         self.dr = video_loc
-        self.create_images()
-        self.make_nparray_for_train()
+        print("creating images")
+        self.create_images(delete_previous)
+        print("converting to numpy array")
+        self.make_nparray_for_train(start_frame=start_frame,max_frames=max_frames,width=width,height=height)
+        print("training")
         for p in range(epochs):
             for i, (batch_x, batch_x1, batch_y) in enumerate(self.dataloader):
 
@@ -231,18 +286,19 @@ class frame_generator():
                 y = y.permute(0, 3, 1, 2)
                 x_new = torch.cat((x, x1), 1)
                 if freq!= 0 and int(i) % freq == 0:
-                    p = self.model.inference(img0=x, img1=x1)
+                    result = torch.cat((x,x1),dim=1)
+                    p = self.model.inference(result)
                     self.generate_images(p, x, x1, y)
                 start_time = time.time()
                 lr = get_learning_rate(i)
-                loss = self.model.update(x_new, y, lr)
+                loss = self.model.update(x_new, y,lr)
                 end_time = time.time()
                 time1 = end_time - start_time
                 print(f"loss={loss}   time taken={time1}  epochs={i}")
         if (save_folder):
             self.model.save_model(path=save_folder,
                          rank=0)
-        self.delete_files_train()
+        # self.delete_files_train()
 
     def load_model(self,loc=""):
         self.model.load_model(path=loc,rank=0)
@@ -256,7 +312,13 @@ class frame_generator():
             self.j += 1
             cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
             self.j += 1
-    def predict(self,output_folder,video_dr="",batch=1,path_to_trt=None,output_width=1280,output_height=720):
+    def predict(self,
+                output_folder,
+                video_dr="",
+                batch=1,
+                path_to_trt=None,
+                output_width=1280,
+                output_height=720):
         if (path_to_trt):
             trt_model = TRTInference(path_to_trt)
         video_writer = None
@@ -353,10 +415,14 @@ class frame_generator():
                     video_writer.write(x_1[i])
         video_writer.release()
 
-# m = frame_generator()
-# # m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
-# #       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model",
-# #       batch=8)
+m = frame_generator()
+m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
+      batch=8,
+      start_frame=2700,
+      max_frames=10,
+      width=640,
+      height=480,
+      delete_previous=False)
 # m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
 # trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_720p_8.trt"
 # s = time.time()
