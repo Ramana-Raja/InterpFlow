@@ -210,10 +210,10 @@ class Model(nn.Module):
         else:
             return pred
 
-    def inference(self, img0, scale=1.0):
-        # imgs = torch.cat((img0, img1), 1)
-        flow, _ = self.flownet(img0, scale)
-        return self.predict(img0, flow, training=False)
+    def inference(self, img0,img1, scale=1.0):
+        imgs = torch.cat((img0,img1),dim=1)
+        flow, _ = self.flownet(imgs, scale)
+        return self.predict(imgs, flow, training=False)
     def forward(self,imgs):
         flow, _ = self.flownet(imgs, 1.0)
         return self.predict(imgs, flow, training=False)

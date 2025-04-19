@@ -1,4 +1,4 @@
-from RIFE import Model as main_model
+from new_model.RIFE_NEW import Model as main_model
 from RIFE import get_learning_rate
 import cv2
 import os
@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import time
 import matplotlib.pyplot as plt
 import shutil
-from frame_generation.test_onnx import TRTInference
+
 
 class frame_generator():
     def __init__(self,fps=60):
@@ -131,14 +131,15 @@ class frame_generator():
         if width and height:
 
             for filename in os.listdir(self.temp_dir):
-
+                print("hellio", j)
                 if j < start_frame:
                     j +=1
                     continue
                 if j > max_frames:
+
                     break
                 if filename.endswith(".jpg") or filename.endswith(".png"):
-                    print(j)
+
                     image = Image.open(os.path.join(self.temp_dir, filename))
                     image = image.resize((width, height))
                     image = image.convert("RGB")
@@ -284,11 +285,13 @@ class frame_generator():
                 x = x.permute(0, 3, 1, 2)
                 x1 = x1.permute(0, 3, 1, 2)
                 y = y.permute(0, 3, 1, 2)
+
                 x_new = torch.cat((x, x1), 1)
-                if freq!= 0 and int(i) % freq == 0:
-                    result = torch.cat((x,x1),dim=1)
-                    p = self.model.inference(result)
-                    self.generate_images(p, x, x1, y)
+                # if freq!= 0 and int(i) % freq == 0:
+                #     imgs = torch.cat((x, x1), 1)
+                #     p = self.model.inference(imgs)
+                #     self.generate_images(p, x, x1, y)
+
                 start_time = time.time()
                 lr = get_learning_rate(i)
                 loss = self.model.update(x_new, y,lr)
@@ -320,6 +323,7 @@ class frame_generator():
                 output_width=1280,
                 output_height=720):
         if (path_to_trt):
+            from frame_generation.test_onnx import TRTInference
             trt_model = TRTInference(path_to_trt)
         video_writer = None
         self.batch = batch
@@ -416,22 +420,28 @@ class frame_generator():
         video_writer.release()
 
 m = frame_generator()
-m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
-      batch=8,
-      start_frame=2700,
-      max_frames=10,
-      width=640,
-      height=480,
-      delete_previous=False)
-# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
-# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_720p_8.trt"
+# m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
+#       batch=4,
+#       start_frame=2700,
+#       max_frames=1000,
+#       width=640,
+#       height=480,
+#       delete_previous=False,
+#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights",
+#       epochs=10)
+
+
+m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
+print("model loaded")
+
+trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model.trt"
 # s = time.time()
-# m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
-#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-#           batch=8,
-#           path_to_trt=trt)
-# # e = time.time()
-#
+m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+          batch=4,
+          path_to_trt=trt)
+# e = time.time()
+
 # print(e-s)
 # import time
 # s = time.time()
@@ -441,11 +451,10 @@ m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels
 # e = time.time()
 #
 # print(e-s)
-# # WORKING_DIR = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation"
-# # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
-# # ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model.onnx')
-# # m.export_model_to_onnx(ONNX_MODEL_PATH,batch=8)
-# # onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model.onnx"
-# # m.build_rtr_engine(onnx_model_path)
-
+# WORKING_DIR = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation"
+# # # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
+# ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model_new.onnx')
+# m.export_model_to_onnx(ONNX_MODEL_PATH,batch=4)
+# onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model_new.onnx"
+# m.build_rtr_engine(onnx_model_path)
 

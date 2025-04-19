@@ -12,7 +12,7 @@ class EngineBuilder:
     Optimized for maximum resource usage.
     """
 
-    def __init__(self, verbose=False, workspace=16):
+    def __init__(self, verbose=False, workspace=8):
         """
         :param verbose: If enabled, a higher verbosity level will be set on the TensorRT logger.
         :param workspace: Max memory workspace to allow, in GB. Increased for maximum optimization.
@@ -28,7 +28,7 @@ class EngineBuilder:
 
         # Increase the workspace memory pool size for maximum performance
         self.config.set_memory_pool_limit(
-            trt.MemoryPoolType.WORKSPACE, workspace * (2 ** 30)
+            trt.MemoryPoolType.WORKSPACE,workspace * (2 ** 30)
         )
 
         self.batch_size = None
