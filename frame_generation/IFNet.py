@@ -88,11 +88,11 @@ class IFNet(nn.Module):
 
 
 if __name__ == '__main__':
-    img0 = torch.zeros(3, 3, 256, 256).float().to(device)
+    img0 = torch.zeros(8, 3, 704, 704).float().to(device)
     img1 = torch.tensor(np.random.normal(
-        0, 1, (3, 3, 256, 256))).float().to(device)
+        0, 1, (8, 3, 704, 704))).float().to(device)
     imgs = torch.cat((img0, img1), 1)
     flownet = IFNet().to(device)
-    flow, _ = flownet(imgs)
+    flow, _ = flownet(imgs,scale=1.0)
     print("flow123",flow.shape)
 

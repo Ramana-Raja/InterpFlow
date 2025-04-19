@@ -118,6 +118,7 @@ class FusionNet(nn.Module):
         x = self.up2(torch.cat((x, s1), 1))
         x = self.up3(torch.cat((x, s0), 1))
         x = self.conv(x)
+
         return x, warped_img0, warped_img1, warped_img0_gt, warped_img1_gt
 
 def get_learning_rate(step, total_steps=3000):
@@ -214,7 +215,7 @@ class Model(nn.Module):
         flow, _ = self.flownet(img0, scale)
         return self.predict(img0, flow, training=False)
     def forward(self,imgs):
-        flow, _ = self.flownet(imgs, 1)
+        flow, _ = self.flownet(imgs, 1.0)
         return self.predict(imgs, flow, training=False)
     def update(self, imgs, gt, learning_rate=0, mul=1, training=True, flow_gt=None):
         for param_group in self.optimG.param_groups:

@@ -44,7 +44,6 @@ class frame_generator():
         if self.frame_position >= self.total_frames:
             self.cap.release()
             return None, None
-
         x_0 = []
         x_1 = []
         if width != None and height != None:
@@ -248,11 +247,21 @@ class frame_generator():
     def load_model(self,loc=""):
         self.model.load_model(path=loc,rank=0)
 
+    def save_images_on_batch(self,x,temp,x_1):
+        for i in range(self.batch):
+            if self.j == 0:
+                cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x[i])
+                self.j += 1
+            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), temp[i])
+            self.j += 1
+            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
+            self.j += 1
     def predict(self,output_folder,video_dr="",batch=1,path_to_trt=None,output_width=1280,output_height=720):
         if (path_to_trt):
             trt_model = TRTInference(path_to_trt)
         video_writer = None
         self.batch = batch
+        self.k =0
         self.j = 0
         self.frame_position = 300
         self.video_predict = video_dr
@@ -273,10 +282,13 @@ class frame_generator():
                 result = np.concatenate((x, x_1), axis=1)
 
                 temp = trt_model.infer(result)
-                print(temp.shape)
+
                 temp = np.transpose(temp, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
                 x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
                 x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+
+                if temp.shape != x.shape:
+                    temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
 
                 temp = (temp * 255).clip(0, 255).astype(np.uint8)
                 x = (x * 255).clip(0, 255).astype(np.uint8)
@@ -284,18 +296,19 @@ class frame_generator():
                 temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
                 x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
                 x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
-                #self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
+
+                # self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
 
                 if video_writer is None:
                     height, width, _ = x[0].shape
-                    output_video_path = os.path.join(output_folder, "output_video.mp4")
-                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
 
+                    output_video_path = os.path.join(output_folder, "output_video.mp4")
+
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+
+                    video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
+                    video_writer.write(x[0])
                 for i in range(self.batch):
-                    if self.j == 0:
-                        video_writer.write(x[i])
-                        self.j += 1
                     video_writer.write(temp[i])
                     video_writer.write(x_1[i])
 
@@ -309,7 +322,6 @@ class frame_generator():
                 result = np.concatenate((x, x_1), axis=1)
                 tensor = torch.tensor(result).to(self.device)
                 temp = self.model.inference(tensor)
-                print(temp.shape)
 
                 temp = temp.permute(0, 2, 3, 1)
                 temp = temp.detach().cpu().numpy()
@@ -318,40 +330,41 @@ class frame_generator():
                 x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
                 x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
 
+                if temp.shape != x.shape:
+                    temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
+
                 temp = (temp * 255).clip(0, 255).astype(np.uint8)
                 x = (x * 255).clip(0, 255).astype(np.uint8)
                 x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
                 temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
                 x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
                 x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
-                # self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
 
                 if video_writer is None:
                     height, width, _ = x[0].shape
+
                     output_video_path = os.path.join(output_folder, "output_video.mp4")
+
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
-
+                    video_writer.write(x[0])
                 for i in range(self.batch):
-                    if self.j == 0:
-                        video_writer.write(x[i])
-                        self.j += 1
                     video_writer.write(temp[i])
                     video_writer.write(x_1[i])
-        print("video created")
         video_writer.release()
-m = frame_generator()
+
+# m = frame_generator()
 # # m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
 # #       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model",
 # #       batch=8)
-m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
-trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\model.trt"
+# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model")
+# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_720p_8.trt"
 # s = time.time()
-m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
-          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-          batch=8,
-          path_to_trt=trt)
-# e = time.time()
+# m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+#           batch=8,
+#           path_to_trt=trt)
+# # e = time.time()
 #
 # print(e-s)
 # import time
