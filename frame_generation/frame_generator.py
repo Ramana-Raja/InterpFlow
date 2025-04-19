@@ -240,7 +240,7 @@ class frame_generator():
 
         print(f"ONNX model exported to: {output_path}")
     def build_rtr_engine(self,onnx_path):
-        from frame_generation.real import EngineBuilder
+        from frame_generation.TRTEngineBuilder import EngineBuilder
 
           # Change to your ONNX model path
         onnx_model_path = onnx_path
