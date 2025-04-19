@@ -323,7 +323,7 @@ class frame_generator():
                 output_width=1280,
                 output_height=720):
         if (path_to_trt):
-            from frame_generation.test_onnx import TRTInference
+            from frame_generation.TRTReader import TRTInference
             trt_model = TRTInference(path_to_trt)
         video_writer = None
         self.batch = batch
