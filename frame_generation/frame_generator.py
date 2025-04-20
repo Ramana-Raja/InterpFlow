@@ -329,7 +329,7 @@ class frame_generator():
         self.batch = batch
         self.k =0
         self.j = 0
-        self.frame_position = 300
+        self.frame_position = 0
         self.video_predict = video_dr
         self.temp_dir_output = "temp_output"
         self.cap = cv2.VideoCapture(self.video_predict)
@@ -362,7 +362,6 @@ class frame_generator():
                 temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
                 x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
                 x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
-
                 # self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
 
                 if video_writer is None:
@@ -418,7 +417,6 @@ class frame_generator():
                     video_writer.write(temp[i])
                     video_writer.write(x_1[i])
         video_writer.release()
-
 m = frame_generator()
 # m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
 #       batch=4,
@@ -436,10 +434,10 @@ print("model loaded")
 
 trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model.trt"
 # s = time.time()
-m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\test2.mp4",
           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
           batch=4,
-          path_to_trt=trt)
+          path_to_trt=trt,)
 # e = time.time()
 
 # print(e-s)
