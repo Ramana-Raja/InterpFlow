@@ -38,6 +38,7 @@ class frame_generator():
 
         # Read until video is completed
         while cap.isOpened():
+            print("capturing video")
             ret, frame = cap.read()
             if ret:
                 # Save the frame as an image file
@@ -131,19 +132,13 @@ class frame_generator():
         y_train = []
         i = 0
         j =0
-        print(start_frame)
-        print(max_frames)
         max_frames = start_frame + max_frames
-        print(max_frames)
         if width and height:
-
             for filename in os.listdir(self.temp_dir):
-                print("hellio", j)
                 if j < start_frame:
                     j +=1
                     continue
                 if j > max_frames:
-
                     break
                 if filename.endswith(".jpg") or filename.endswith(".png"):
 
@@ -186,7 +181,6 @@ class frame_generator():
                         i = 0
                     image.close()
                 j = j + 1
-        print(j)
         x = np.array(x_train)
         x1 = np.array(x_train1)
         y = np.array(y_train)
@@ -284,6 +278,7 @@ class frame_generator():
         self.make_nparray_for_train(start_frame=start_frame,max_frames=max_frames,width=width,height=height)
         print("training")
         for p in range(epochs):
+            total_batches = len(self.dataloader)
             for i, (batch_x, batch_x1, batch_y) in enumerate(self.dataloader):
 
                 x = batch_x.to(self.device)
@@ -304,7 +299,10 @@ class frame_generator():
                 loss = self.model.update(x_new, y,lr)
                 end_time = time.time()
                 time1 = end_time - start_time
-                print(f"loss={loss}   time taken={time1}  epochs={i}")
+
+                print_progress_bar(i + 1, total_batches, prefix=f"Epoch {p + 1}/{epochs}")
+                stdout.write(f" - loss: {loss:.12f} - time: {time1:.2f}s")
+                stdout.flush()
         if (save_folder):
             self.model.save_model(path=save_folder,
                          rank=0)
@@ -345,7 +343,6 @@ class frame_generator():
         if os.path.exists(self.temp_dir_output):
             shutil.rmtree(self.temp_dir_output)
         os.makedirs(self.temp_dir_output, exist_ok=True)
-
         if path_to_trt:
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width,height=output_height)
@@ -439,20 +436,31 @@ class frame_generator():
         print_progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
 # m = frame_generator()
-# # m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
-# #       batch=4,
-# #       start_frame=2700,
-# #       max_frames=1000,
-# #       width=640,
-# #       height=480,
-# #       delete_previous=False,
-# #       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights",
-# #       epochs=10)
-#
-#
 # m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
-# print("model loaded")
+# # print("loaded model")
+# folder_path = r'C:\Users\raman\Downloads\New folder (3)'
+# video_files = [
+#     os.path.join(folder_path, f)
+#     for f in os.listdir(folder_path)
+#     if f.lower().endswith('.mp4')
+# ]
+# for video in video_files:
+#     m.fit(video_loc=video,
+#       batch=4,
+#       start_frame=0,
+#       max_frames=500,
+#       width=800,
+#       height=800,
+#       delete_previous=True,
+#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model",
+#       epochs=10)
 #
+#     m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
+#     print(f"finsied{i} ")
+#
+
+# print("model loaded")
+
 # trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\model_batch_12.trt"
 # s = time.time()
 # m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
