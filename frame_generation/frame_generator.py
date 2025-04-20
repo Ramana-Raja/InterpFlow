@@ -459,15 +459,15 @@ class frame_generator():
 
 # print("model loaded")
 
-trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_batch_12.trt"
-s = time.time()
-m.predict(video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\13473444_1920_1080_30fps.mp4",
-          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-          batch=12,
-          path_to_trt = trt,
-          output_width=640,
-          output_height=480)
-e = time.time()
+# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_batch_12.trt"
+# s = time.time()
+# m.predict(video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\13473444_1920_1080_30fps.mp4",
+#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+#           batch=12,
+#           path_to_trt = trt,
+#           output_width=640,
+#           output_height=480)
+# e = time.time()
 #
 # print(e-s)
 # # import time
