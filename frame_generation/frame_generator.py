@@ -292,7 +292,8 @@ class frame_generator():
                 #     self.generate_images(p, x, x1, y)
 
                 start_time = time.time()
-                lr = get_learning_rate(i)
+                global_step = p * total_batches + i
+                lr = get_learning_rate(global_step)
                 loss = self.model.update(x_new, y,lr)
                 end_time = time.time()
                 time1 = end_time - start_time
@@ -458,15 +459,15 @@ class frame_generator():
 
 # print("model loaded")
 
-# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\model_batch_12.trt"
-# s = time.time()
-# m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
-#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-#           batch=12,
-#           path_to_trt = trt,
-#           output_width=640,
-#           output_height=480)
-# e = time.time()
+trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_batch_12.trt"
+s = time.time()
+m.predict(video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\13473444_1920_1080_30fps.mp4",
+          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+          batch=12,
+          path_to_trt = trt,
+          output_width=640,
+          output_height=480)
+e = time.time()
 #
 # print(e-s)
 # # import time
