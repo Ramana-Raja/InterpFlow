@@ -397,6 +397,8 @@ class frame_generator():
                     video_writer.write(x_1[i])
                     self.j += 1
                     print_progress_bar(self.j, self.total_frames)
+            print_progress_bar(self.total_frames, self.total_frames)
+            video_writer.release()
             return
         if path_to_trt:
             while True:
@@ -490,7 +492,7 @@ class frame_generator():
                     print_progress_bar(self.j, self.total_frames)
         print_progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
-m = frame_generator()
+m = frame_generator(fps=25)
 # m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
 # # print("loaded model")
 # folder_path = r'C:\Users\raman\Downloads\New folder (3)'
@@ -530,7 +532,7 @@ m = frame_generator()
 # # import time
 # s = time.time()
 m.predict(use_pre_trained_rife=True,
-          video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\test2.mp4",
+          video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\demo.mp4",
           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
           batch=12,
           output_width=640,
