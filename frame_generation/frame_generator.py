@@ -10,6 +10,13 @@ import time
 import matplotlib.pyplot as plt
 import shutil
 
+from sys import stdout
+def print_progress_bar(current, total, length=30, prefix='Progress'):
+    percent = current / total
+    filled_len = int(length * percent)
+    bar = '=' * filled_len + '.' * (length - filled_len)
+    stdout.write(f'\r{prefix}: [{bar}] {current}/{total} ({percent * 100:.1f}%)')
+    stdout.flush()
 
 class frame_generator():
     def __init__(self,fps=60):
@@ -220,7 +227,7 @@ class frame_generator():
             plt.imshow(display_list[i] * 0.5 + 0.5)
             plt.axis('off')
         plt.show()
-    def export_model_to_onnx(self,output_path, img_size=(720, 1280),batch=4):
+    def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4):
         model = self.model
         model.eval()
 
@@ -239,12 +246,12 @@ class frame_generator():
         )
 
         print(f"ONNX model exported to: {output_path}")
-    def build_rtr_engine(self,onnx_path):
+    def build_rtr_engine(self,onnx_path,engine_file_path="model.trt"):
         from frame_generation.TRTEngineBuilder import EngineBuilder
 
           # Change to your ONNX model path
         onnx_model_path = onnx_path
-        engine_file_path = "model.trt"  # Change to your desired output path
+        engine_file_path = engine_file_path  # Change to your desired output path
         precision_mode = "fp16"  # Choose "fp16" or "fp32"
         use_int8_precision = False  # Set to True if you want to use INT8 (ensure your hardware supports it)
         workspace_size_gb = 10  # Max memory workspace in GB for optimization
@@ -326,8 +333,8 @@ class frame_generator():
             from frame_generation.TRTReader import TRTInference
             trt_model = TRTInference(path_to_trt)
         video_writer = None
+        self.model.eval()
         self.batch = batch
-        self.k =0
         self.j = 0
         self.frame_position = 0
         self.video_predict = video_dr
@@ -373,9 +380,15 @@ class frame_generator():
 
                     video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
                     video_writer.write(x[0])
+                    self.j += 1
+                    print_progress_bar(self.j, self.total_frames)
                 for i in range(self.batch):
                     video_writer.write(temp[i])
+                    # self.j +=1
+                    # print_progress_bar(self.j, self.total_frames)
                     video_writer.write(x_1[i])
+                    self.j += 1
+                    print_progress_bar(self.j, self.total_frames)
 
         else:
             while True:
@@ -413,46 +426,58 @@ class frame_generator():
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
                     video_writer.write(x[0])
+                    self.j += 1
+                    print_progress_bar(self.j, self.total_frames)
                 for i in range(self.batch):
+
                     video_writer.write(temp[i])
+                    # self.j +=1
+                    # print_progress_bar(self.j, self.total_frames)
                     video_writer.write(x_1[i])
+                    self.j +=1
+                    print_progress_bar(self.j, self.total_frames)
+        print_progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
-m = frame_generator()
-# m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
-#       batch=4,
-#       start_frame=2700,
-#       max_frames=1000,
-#       width=640,
-#       height=480,
-#       delete_previous=False,
-#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights",
-#       epochs=10)
-
-
-m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
-print("model loaded")
-
-trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model.trt"
+# m = frame_generator()
+# # m.fit(video_loc="C:\\Users\\raman\\Videos\\NVIDIA\\Marvels Spider-Man 2\\Marvels Spider-Man 2 2025.04.17 - 17.57.11.06.DVR.mp4",
+# #       batch=4,
+# #       start_frame=2700,
+# #       max_frames=1000,
+# #       width=640,
+# #       height=480,
+# #       delete_previous=False,
+# #       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights",
+# #       epochs=10)
+#
+#
+# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
+# print("model loaded")
+#
+# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\model_batch_12.trt"
 # s = time.time()
-m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\test2.mp4",
-          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-          batch=4,
-          path_to_trt=trt,)
-# e = time.time()
-
-# print(e-s)
-# import time
-# s = time.time()
-# m.predict(video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\Red Dead Redemption 2 2024.07.03 - 21.28.47.03.mp4",
+# m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
 #           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-#           batch=8)
+#           batch=12,
+#           path_to_trt = trt,
+#           output_width=640,
+#           output_height=480)
+# e = time.time()
+#
+# print(e-s)
+# # import time
+# s = time.time()
+# m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
+#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+#           batch=12,
+#           output_width=640,
+#           output_height=480)
 # e = time.time()
 #
 # print(e-s)
 # WORKING_DIR = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation"
-# # # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
-# ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model_new.onnx')
-# m.export_model_to_onnx(ONNX_MODEL_PATH,batch=4)
-# onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model_new.onnx"
-# m.build_rtr_engine(onnx_model_path)
+# # # # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
+# ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model_new_batch_12.onnx')
+# m.export_model_to_onnx(ONNX_MODEL_PATH,batch=12)
+# onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model_new_batch_12.onnx"
+# m.build_rtr_engine(onnx_model_path,engine_file_path="model_batch_12.trt")
 
