@@ -319,7 +319,8 @@ class frame_generator():
             cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
             self.j += 1
     def predict(self,
-                output_folder,
+                use_pre_trained_rife=True,
+                output_folder="",
                 video_dr="",
                 batch=1,
                 path_to_trt=None,
@@ -329,7 +330,7 @@ class frame_generator():
             from frame_generation.TRTReader import TRTInference
             trt_model = TRTInference(path_to_trt)
         video_writer = None
-        self.model.eval()
+
         self.batch = batch
         self.j = 0
         self.frame_position = 0
@@ -341,6 +342,62 @@ class frame_generator():
         if os.path.exists(self.temp_dir_output):
             shutil.rmtree(self.temp_dir_output)
         os.makedirs(self.temp_dir_output, exist_ok=True)
+
+        if use_pre_trained_rife:
+            print("using pretrained model")
+            from frame_generation.best_model.RIFE_HDv3 import Model as Model_2
+            self.model = Model_2()
+            self.model.eval()
+            self.model.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
+
+            while True:
+                x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
+
+                if x is None or x_1 is None:
+                    break
+
+
+                x = torch.tensor(x).to(self.device)
+                x_1 = torch.tensor(x_1).to(self.device)
+                temp = self.model.inference(x,x_1)
+
+                temp = temp.permute(0, 2, 3, 1)
+                temp = temp.detach().cpu().numpy()
+
+                x = x.permute(0, 2, 3, 1)
+                x = x.detach().cpu().numpy()
+
+                x_1 = x_1.permute(0, 2, 3, 1)
+                x_1 = x_1.detach().cpu().numpy()
+
+                if temp.shape != x.shape:
+                    temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
+
+                temp = (temp * 255).clip(0, 255).astype(np.uint8)
+                x = (x * 255).clip(0, 255).astype(np.uint8)
+                x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+                temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
+                x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
+                x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+
+                if video_writer is None:
+                    height, width, _ = x[0].shape
+
+                    output_video_path = os.path.join(output_folder, "output_video.mp4")
+
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
+                    video_writer.write(x[0])
+                    self.j += 1
+                    print_progress_bar(self.j, self.total_frames)
+                for i in range(self.batch):
+                    video_writer.write(temp[i])
+                    # self.j +=1
+                    # print_progress_bar(self.j, self.total_frames)
+                    video_writer.write(x_1[i])
+                    self.j += 1
+                    print_progress_bar(self.j, self.total_frames)
+            return
         if path_to_trt:
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width,height=output_height)
@@ -433,7 +490,7 @@ class frame_generator():
                     print_progress_bar(self.j, self.total_frames)
         print_progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
-# m = frame_generator()
+m = frame_generator()
 # m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
 # # print("loaded model")
 # folder_path = r'C:\Users\raman\Downloads\New folder (3)'
@@ -472,11 +529,12 @@ class frame_generator():
 # print(e-s)
 # # import time
 # s = time.time()
-# m.predict(video_dr="C:\\Users\\raman\\Videos\\Valorant\\Valorant 2024.03.15 - 21.10.45.02.mp4",
-#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-#           batch=12,
-#           output_width=640,
-#           output_height=480)
+m.predict(use_pre_trained_rife=True,
+          video_dr="C:\\Users\\raman\\Videos\\Red Dead Redemption 2\\test2.mp4",
+          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+          batch=12,
+          output_width=640,
+          output_height=480)
 # e = time.time()
 #
 # print(e-s)
