@@ -187,9 +187,6 @@ class frame_generator():
         x = torch.tensor(x, dtype=torch.float32)
         x1 = torch.tensor(x1, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.float32)
-        print(x.shape)
-        print(x1.shape)
-        print(y.shape)
         dataset = TensorDataset(x, x1, y)
         self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
 
