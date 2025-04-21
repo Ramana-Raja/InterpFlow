@@ -12,8 +12,9 @@ from frame_generation.loss import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-class Model():
+class Model(nn.Module):
     def __init__(self, local_rank=-1):
+        super(Model, self).__init__()
         self.flownet = IFNet()
         self.device()
         self.optimG = AdamW(self.flownet.parameters(), lr=1e-6, weight_decay=1e-4)
@@ -24,7 +25,7 @@ class Model():
         if local_rank != -1:
             self.flownet = DDP(self.flownet, device_ids=[local_rank], output_device=local_rank)
 
-    def train(self):
+    def train_1(self):
         self.flownet.train()
 
     def eval(self):
@@ -53,8 +54,14 @@ class Model():
         if rank == 0:
             torch.save(self.flownet.state_dict(),'{}/flownet.pkl'.format(path))
 
-    def inference(self, img0, img1, timestep=0.5, scale=1.0):
+    def inference(self, img0, img1, timestep=0.5, scale=1):
         imgs = torch.cat((img0, img1), 1)
         scale_list = [16/scale, 8/scale, 4/scale, 2/scale, 1/scale]
+        flow, mask, merged = self.flownet(imgs, timestep, scale_list)
+        return merged[-1]
+    def forward(self, imgs):
+        timestep = 0.5
+        scale = 1
+        scale_list = np.array([16 / scale, 8 / scale, 4 / scale, 2 / scale, 1 / scale], dtype=np.float32)
         flow, mask, merged = self.flownet(imgs, timestep, scale_list)
         return merged[-1]

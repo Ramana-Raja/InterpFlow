@@ -1,3 +1,5 @@
+from os import times
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -123,8 +125,10 @@ class IFNet(nn.Module):
             img1 = x[:, channel:]
         if not torch.is_tensor(timestep_1):
             timestep = (x[:, :1].clone() * 0 + 1) * timestep_1
+            timestep = timestep.to(img0.device).to(torch.float32)
         else:
-            timestep = timestep_1.repeat(1, 1, img0.shape[2], img0.shape[3])
+            timestep = timestep_1.repeat(img0.shape[0], 1, img0.shape[2], img0.shape[3])
+            timestep = timestep.to(img0.device).to(torch.float32)
         f0 = self.encode(img0[:, :3])
         f1 = self.encode(img1[:, :3])
         flow_list = []
