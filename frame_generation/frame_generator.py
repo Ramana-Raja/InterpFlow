@@ -24,6 +24,7 @@ class frame_generator():
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def create_images(self,delete_previous=True):
+
         self.temp_dir = "temp_folder"
         if os.path.exists(self.temp_dir):
             if delete_previous:
@@ -52,6 +53,7 @@ class frame_generator():
 
         cap.release()
     def create_images_for_predict(self,width=None,height=None):
+
         if self.frame_position >= self.total_frames:
             self.cap.release()
             return None, None
@@ -117,16 +119,21 @@ class frame_generator():
 
         return x_0,x_1
     def delete_files_train(self):
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
+
     def delete_files_predict(self):
+
         if os.path.exists(self.temp_dir_output):
             shutil.rmtree(self.temp_dir_output)
+
     def make_nparray_for_train(self,
                                max_frames=1000,
                                start_frame=0,
                                width=640,
                                height=480):
+
         x_train = []
         x_train1 = []
         y_train = []
