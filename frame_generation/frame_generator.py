@@ -191,6 +191,7 @@ class frame_generator():
         self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
 
     def generate_images(self,prediction, test_input,test_input2, tar):
+
         prediction = prediction.permute(0, 2, 3, 1)
         prediction = prediction.to("cpu")
         prediction = prediction.detach().numpy()
@@ -219,9 +220,8 @@ class frame_generator():
             plt.axis('off')
         plt.show()
     def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4):
-        from frame_generation.best_model.RIFE_HDv3 import Model as Model_2
-        model = Model_2()
-        model.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
+
+        model = self.model()
         model.eval()
 
         dummy_input = torch.randn(batch, 6, img_size[0], img_size[1]).to(self.device)
@@ -240,6 +240,7 @@ class frame_generator():
 
         print(f"ONNX model exported to: {output_path}")
     def build_rtr_engine(self,onnx_path,engine_file_path="model.trt"):
+
         from frame_generation.TRTEngineBuilder import EngineBuilder
 
           # Change to your ONNX model path
@@ -269,6 +270,8 @@ class frame_generator():
             max_frames=1000,
             width=None,
             height=None):
+
+
         self.batch = batch
         self.dr = video_loc
         print("creating images")
@@ -328,6 +331,8 @@ class frame_generator():
                 path_to_trt=None,
                 output_width=1280,
                 output_height=720):
+
+
         if (path_to_trt):
             from frame_generation.TRTReader import TRTInference
             trt_model = TRTInference(path_to_trt)
