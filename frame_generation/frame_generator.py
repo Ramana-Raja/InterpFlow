@@ -558,7 +558,7 @@ class frame_generator():
                     print_progress_bar(self.j, self.total_frames)
         print_progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
-m = frame_generator(fps=25)
+# m = frame_generator(fps=25)
 # m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
 # # print("loaded model")
 # folder_path = r'C:\Users\raman\Downloads\New folder (3)'
