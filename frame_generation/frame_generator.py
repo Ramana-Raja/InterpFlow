@@ -271,7 +271,6 @@ class frame_generator():
             save_folder=None,
             video_loc="",
             batch=2,
-            num_workers=4,
             delete_previous=True,
             start_frame=0,
             max_frames=1000,
@@ -298,10 +297,10 @@ class frame_generator():
                 y = y.permute(0, 3, 1, 2)
 
                 x_new = torch.cat((x, x1), 1)
-                # if freq!= 0 and int(i) % freq == 0:
-                #     imgs = torch.cat((x, x1), 1)
-                #     p = self.model.inference(imgs)
-                #     self.generate_images(p, x, x1, y)
+                if freq!= 0 and int(i) % freq == 0:
+                    imgs = torch.cat((x, x1), 1)
+                    p = self.model.inference(imgs)
+                    self.generate_images(p, x, x1, y)
 
                 start_time = time.time()
                 global_step = p * total_batches + i
