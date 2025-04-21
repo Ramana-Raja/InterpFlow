@@ -219,10 +219,12 @@ class frame_generator():
             plt.axis('off')
         plt.show()
     def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4):
-        model = self.model
+        from frame_generation.best_model.RIFE_HDv3 import Model as Model_2
+        model = Model_2()
+        model.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
         model.eval()
 
-        dummy_input = torch.randn(batch, 6, img_size[0], img_size[1]).cuda()
+        dummy_input = torch.randn(batch, 6, img_size[0], img_size[1]).to(self.device)
         self.trt_0 = img_size[0]
         self.trt_1 = img_size[1]
         torch.onnx.export(
@@ -342,64 +344,116 @@ class frame_generator():
         if os.path.exists(self.temp_dir_output):
             shutil.rmtree(self.temp_dir_output)
         os.makedirs(self.temp_dir_output, exist_ok=True)
-
         if use_pre_trained_rife:
             print("using pretrained model")
-            from frame_generation.best_model.RIFE_HDv3 import Model as Model_2
-            self.model = Model_2()
-            self.model.eval()
-            self.model.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
+            if path_to_trt:
+                print("using trt model")
+                from frame_generation.TRTReader import TRTInference
+                trt_model = TRTInference(path_to_trt)
 
-            while True:
-                x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
+                while True:
+                    x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
 
-                if x is None or x_1 is None:
-                    break
+                    if x is None or x_1 is None:
+                        break
+                    result = np.concatenate((x, x_1), axis=1)
 
+                    temp = trt_model.infer(result)
 
-                x = torch.tensor(x).to(self.device)
-                x_1 = torch.tensor(x_1).to(self.device)
-                temp = self.model.inference(x,x_1)
+                    temp = np.transpose(temp, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                    x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                    x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
 
-                temp = temp.permute(0, 2, 3, 1)
-                temp = temp.detach().cpu().numpy()
+                    if temp.shape != x.shape:
+                        temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
 
-                x = x.permute(0, 2, 3, 1)
-                x = x.detach().cpu().numpy()
+                    temp = (temp * 255).clip(0, 255).astype(np.uint8)
+                    x = (x * 255).clip(0, 255).astype(np.uint8)
+                    x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+                    temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
+                    x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
+                    x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+                    # self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
 
-                x_1 = x_1.permute(0, 2, 3, 1)
-                x_1 = x_1.detach().cpu().numpy()
+                    if video_writer is None:
+                        height, width, _ = x[0].shape
 
-                if temp.shape != x.shape:
-                    temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
+                        output_video_path = os.path.join(output_folder, "output_video.mp4")
 
-                temp = (temp * 255).clip(0, 255).astype(np.uint8)
-                x = (x * 255).clip(0, 255).astype(np.uint8)
-                x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
-                temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
-                x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
-                x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
-                if video_writer is None:
-                    height, width, _ = x[0].shape
+                        video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
+                        video_writer.write(x[0])
+                        self.j += 1
+                        print_progress_bar(self.j, self.total_frames)
+                    for i in range(self.batch):
+                        video_writer.write(temp[i])
+                        # self.j +=1
+                        # print_progress_bar(self.j, self.total_frames)
+                        video_writer.write(x_1[i])
+                        self.j += 1
+                        print_progress_bar(self.j, self.total_frames)
+                        print_progress_bar(self.j, self.total_frames)
+                print_progress_bar(self.total_frames, self.total_frames)
+                video_writer.release()
+                return
 
-                    output_video_path = os.path.join(output_folder, "output_video.mp4")
+            else:
+                from frame_generation.best_model.RIFE_HDv3 import Model as Model_2
+                self.model = Model_2()
+                self.model.eval()
+                self.model.load_model(
+                    "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
 
-                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
-                    video_writer.write(x[0])
-                    self.j += 1
-                    print_progress_bar(self.j, self.total_frames)
-                for i in range(self.batch):
-                    video_writer.write(temp[i])
-                    # self.j +=1
-                    # print_progress_bar(self.j, self.total_frames)
-                    video_writer.write(x_1[i])
-                    self.j += 1
-                    print_progress_bar(self.j, self.total_frames)
-            print_progress_bar(self.total_frames, self.total_frames)
-            video_writer.release()
-            return
+                while True:
+                    x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
+
+                    if x is None or x_1 is None:
+                        break
+
+                    x = torch.tensor(x).to(self.device)
+                    x_1 = torch.tensor(x_1).to(self.device)
+                    temp = self.model.inference(x, x_1)
+
+                    temp = temp.permute(0, 2, 3, 1)
+                    temp = temp.detach().cpu().numpy()
+
+                    x = x.permute(0, 2, 3, 1)
+                    x = x.detach().cpu().numpy()
+
+                    x_1 = x_1.permute(0, 2, 3, 1)
+                    x_1 = x_1.detach().cpu().numpy()
+
+                    if temp.shape != x.shape:
+                        temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
+
+                    temp = (temp * 255).clip(0, 255).astype(np.uint8)
+                    x = (x * 255).clip(0, 255).astype(np.uint8)
+                    x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+                    temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
+                    x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
+                    x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+
+                    if video_writer is None:
+                        height, width, _ = x[0].shape
+
+                        output_video_path = os.path.join(output_folder, "output_video.mp4")
+
+                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                        video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
+                        video_writer.write(x[0])
+                        self.j += 1
+                        print_progress_bar(self.j, self.total_frames)
+                    for i in range(self.batch):
+                        video_writer.write(temp[i])
+                        # self.j +=1
+                        # print_progress_bar(self.j, self.total_frames)
+                        video_writer.write(x_1[i])
+                        self.j += 1
+                        print_progress_bar(self.j, self.total_frames)
+                print_progress_bar(self.total_frames, self.total_frames)
+                video_writer.release()
+                return
         if path_to_trt:
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width,height=output_height)
@@ -518,7 +572,7 @@ m = frame_generator(fps=25)
 
 # print("model loaded")
 
-# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_batch_12.trt"
+# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_batch_12_pretrained.trt"
 # s = time.time()
 # m.predict(video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\13473444_1920_1080_30fps.mp4",
 #           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
@@ -531,19 +585,20 @@ m = frame_generator(fps=25)
 # print(e-s)
 # # import time
 # s = time.time()
-m.predict(use_pre_trained_rife=True,
-          video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\demo.mp4",
-          output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-          batch=12,
-          output_width=640,
-          output_height=480)
+# m.predict(use_pre_trained_rife=True,
+#           video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\demo.mp4",
+#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
+#           batch=16,
+#           output_width=640,
+#           output_height=480,
+#           path_to_trt=trt)
 # e = time.time()
 #
 # print(e-s)
 # WORKING_DIR = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation"
-# # # # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
-# ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model_new_batch_12.onnx')
-# m.export_model_to_onnx(ONNX_MODEL_PATH,batch=12)
-# onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model_new_batch_12.onnx"
-# m.build_rtr_engine(onnx_model_path,engine_file_path="model_batch_12.trt")
+# # # # # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
+# ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model_new_batch_16_pretrained.onnx')
+# m.export_model_to_onnx(ONNX_MODEL_PATH,batch=16)
+# onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model_new_batch_16_pretrained.onnx"
+# m.build_rtr_engine(onnx_model_path,engine_file_path="model_batch_12_pretrained.trt")
 
