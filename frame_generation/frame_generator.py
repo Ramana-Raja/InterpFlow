@@ -21,7 +21,6 @@ def print_progress_bar(current, total, length=30, prefix='Progress'):
 class frame_generator():
     def __init__(self,fps=60):
         self.model = main_model()
-        self.fps = fps
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def create_images(self,delete_previous=True):
@@ -34,6 +33,7 @@ class frame_generator():
         os.makedirs(self.temp_dir, exist_ok=True)
 
         cap = cv2.VideoCapture(self.dr)
+        self.fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0
 
         # Read until video is completed
@@ -339,6 +339,7 @@ class frame_generator():
         self.video_predict = video_dr
         self.temp_dir_output = "temp_output"
         self.cap = cv2.VideoCapture(self.video_predict)
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
         if os.path.exists(self.temp_dir_output):
