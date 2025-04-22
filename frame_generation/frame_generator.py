@@ -1,5 +1,5 @@
 from new_model.RIFE_NEW import Model as main_model
-from RIFE import get_learning_rate
+from old_model.RIFE import get_learning_rate
 import cv2
 import os
 from PIL import Image
@@ -247,7 +247,7 @@ class frame_generator():
         print(f"ONNX model exported to: {output_path}")
     def build_rtr_engine(self,onnx_path,engine_file_path="model.trt"):
 
-        from frame_generation.TRTEngineBuilder import EngineBuilder
+        from frame_generation.TRT.TRTEngineBuilder import EngineBuilder
 
           # Change to your ONNX model path
         onnx_model_path = onnx_path
@@ -339,7 +339,7 @@ class frame_generator():
 
 
         if (path_to_trt):
-            from frame_generation.TRTReader import TRTInference
+            from frame_generation.TRT.TRTReader import TRTInference
             trt_model = TRTInference(path_to_trt)
         video_writer = None
 
@@ -359,7 +359,7 @@ class frame_generator():
             print("using pretrained model")
             if path_to_trt:
                 print("using trt model")
-                from frame_generation.TRTReader import TRTInference
+                from frame_generation.TRT.TRTReader import TRTInference
                 trt_model = TRTInference(path_to_trt)
 
                 while True:
