@@ -60,3 +60,11 @@ This project uses code from the [RIFE](https://github.com/hzwer/ECCV2022-RIFE) r
 - [hzwer](https://github.com/hzwer)
 
 Please retain the copyright notice and license text in this project as specified in the MIT License.
+
+## License
+
+This project is licensed under the BSD 3-Clause License.
+
+## Third-party Licenses
+
+This project uses third-party code that is licensed under the MIT License. See the `third_party_licenses.txt` file for details.
