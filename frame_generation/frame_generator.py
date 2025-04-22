@@ -19,7 +19,7 @@ def print_progress_bar(current, total, length=30, prefix='Progress'):
     stdout.flush()
 
 class frame_generator():
-    def __init__(self,fps=60):
+    def __init__(self):
         self.model = main_model()
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -166,7 +166,6 @@ class frame_generator():
                     image.close()
                 j = j + 1
         else:
-            print("hello")
             for filename in os.listdir(self.temp_dir):
                 if j < start_frame:
                     continue
@@ -223,7 +222,7 @@ class frame_generator():
             plt.subplot(1, 4, i + 1)
             plt.title(title[i])
             # Getting the pixel values in the [0, 1] range to plot.
-            plt.imshow(display_list[i] * 0.5 + 0.5)
+            plt.imshow(display_list[i]*225)
             plt.axis('off')
         plt.show()
     def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4):
@@ -509,6 +508,8 @@ class frame_generator():
                     video_writer.write(x_1[i])
                     self.j += 1
                     print_progress_bar(self.j, self.total_frames)
+            print_progress_bar(self.total_frames, self.total_frames)
+            video_writer.release()
 
         else:
             while True:
