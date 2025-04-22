@@ -1,7 +1,6 @@
 import onnxruntime as ort
 import numpy as np
 import torch
-from RIFE import Model as RifeModel
 # Load the ONNX model
 import time
 import pycuda.driver as cuda

@@ -1,3 +1,4 @@
+from InterpFlow.InterpFlow import InterpFlow
 
 # Frame Generator Using RIFE
 
@@ -23,7 +24,9 @@ The dependencies include:
 To initialize the frame generator, provide the location of the video file and the desired frames per second (FPS):
 
 ```python
-frame_gen = frame_generator(fps=30)
+from InterpFlow import InterpFlowModel
+
+model = InterpFlowModel()
 ```
 
 
@@ -32,7 +35,14 @@ frame_gen = frame_generator(fps=30)
 The model can be trained by providing a video and specifying the number of epochs. Training will use the frames extracted from the video.
 
 ```python
-frame_gen.train(video_loc="train_video",epochs=5, freq=500, save_folder="models/")
+model.train(video_loc="train_video",epochs=5, freq=500, save_folder="models/")
+```
+### Loading Of Models
+
+Once the model is trained, you can use it to generate frames and save them as a video.
+
+```python
+model.load_model("new_rife_model_weights") #uses pretrained model
 ```
 
 ### Model Prediction
@@ -40,7 +50,7 @@ frame_gen.train(video_loc="train_video",epochs=5, freq=500, save_folder="models/
 Once the model is trained, you can use it to generate frames and save them as a video.
 
 ```python
-frame_gen.predict(video_dr="video_folder",output_folder="output_folder/")
+model.predict(video_dr="video_folder",output_folder="output_folder/")
 ```
 
 ### Acknowledgments

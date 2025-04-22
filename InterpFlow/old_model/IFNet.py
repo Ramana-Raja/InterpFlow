@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from frame_generation.warp import warp
+from InterpFlow.warp import warp
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

@@ -1,5 +1,5 @@
-from new_model.RIFE_NEW import Model as main_model
-from old_model.RIFE import get_learning_rate
+from InterpFlow.new_model.RIFE_NEW import Model as main_model
+from InterpFlow.old_model.RIFE import get_learning_rate
 import cv2
 import os
 from PIL import Image
@@ -18,7 +18,7 @@ def print_progress_bar(current, total, length=30, prefix='Progress'):
     stdout.write(f'\r{prefix}: [{bar}] {current}/{total} ({percent * 100:.1f}%)')
     stdout.flush()
 
-class InterpFlow():
+class InterpFlowModel:
     def __init__(self):
         self.model = main_model()
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -247,7 +247,7 @@ class InterpFlow():
         print(f"ONNX model exported to: {output_path}")
     def build_rtr_engine(self,onnx_path,engine_file_path="model.trt"):
 
-        from frame_generation.TRT.TRTEngineBuilder import EngineBuilder
+        from InterpFlow.TRT.TRTEngineBuilder import EngineBuilder
 
           # Change to your ONNX model path
         onnx_model_path = onnx_path
@@ -317,7 +317,9 @@ class InterpFlow():
         # self.delete_files_train()
 
     def load_model(self,loc=""):
-        self.model.load_model(path=loc,rank=0)
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        model_path = os.path.join(script_dir, loc)
+        self.model.load_model(path=model_path,rank=0)
 
     def save_images_on_batch(self,x,temp,x_1):
         for i in range(self.batch):
@@ -339,7 +341,7 @@ class InterpFlow():
 
 
         if (path_to_trt):
-            from frame_generation.TRT.TRTReader import TRTInference
+            from InterpFlow.TRT.TRTReader import TRTInference
             trt_model = TRTInference(path_to_trt)
         video_writer = None
 
@@ -359,7 +361,7 @@ class InterpFlow():
             print("using pretrained model")
             if path_to_trt:
                 print("using trt model")
-                from frame_generation.TRT.TRTReader import TRTInference
+                from InterpFlow.TRT.TRTReader import TRTInference
                 trt_model = TRTInference(path_to_trt)
 
                 while True:
@@ -410,11 +412,12 @@ class InterpFlow():
                 return
 
             else:
-                from frame_generation.best_model.RIFE_HDv3 import Model as Model_2
+                from InterpFlow.best_model.RIFE_HDv3 import Model as Model_2
                 self.model = Model_2()
                 self.model.eval()
-                self.model.load_model(
-                    "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
+                script_dir = os.path.dirname(os.path.realpath(__file__))
+                model_path = os.path.join(script_dir, "best_model")
+                self.model.load_model(model_path)
 
                 while True:
                     x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)

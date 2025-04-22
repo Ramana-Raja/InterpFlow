@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from frame_generation.warp import warp
-from frame_generation.new_model.refine import *
+from InterpFlow.warp import warp
+from InterpFlow.new_model.refine import *
 
 
 def deconv(in_planes, out_planes, kernel_size=4, stride=2, padding=1):

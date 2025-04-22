@@ -4,11 +4,11 @@ import numpy as np
 from torch.optim import AdamW
 import torch.optim as optim
 import itertools
-from frame_generation.warp import warp
+from InterpFlow.warp import warp
 from torch.nn.parallel import DistributedDataParallel as DDP
-from frame_generation.IFNet import *
+from InterpFlow.old_model.IFNet import *
 import torch.nn.functional as F
-from frame_generation.loss import *
+from InterpFlow.loss import *
 import os
 from PIL import Image
 from torch.optim import AdamW
