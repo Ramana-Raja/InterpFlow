@@ -18,7 +18,7 @@ def print_progress_bar(current, total, length=30, prefix='Progress'):
     stdout.write(f'\r{prefix}: [{bar}] {current}/{total} ({percent * 100:.1f}%)')
     stdout.flush()
 
-class frame_generator():
+class InterpFlow():
     def __init__(self):
         self.model = main_model()
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
