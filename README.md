@@ -1,5 +1,3 @@
-from InterpFlow.InterpFlow import InterpFlow
-
 # Frame Generator Using RIFE
 
 ## Overview
