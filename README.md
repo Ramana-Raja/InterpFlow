@@ -36,9 +36,7 @@ The model can be trained by providing a video and specifying the number of epoch
 model.train(video_loc="train_video",epochs=5, freq=500, save_folder="models/")
 ```
 ### Loading Of Models
-
-Once the model is trained, you can use it to generate frames and save them as a video.
-
+Loading pretrained models
 ```python
 model.load_model("new_rife_model_weights") #uses pretrained model
 ```
