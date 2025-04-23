@@ -1,5 +1,5 @@
-from InterpFlow.new_model.RIFE_NEW import Model as main_model
-from InterpFlow.old_model.RIFE import get_learning_rate
+from InterpFlow.Models.v2.RIFE_NEW import Model as main_model
+from InterpFlow.Models.v1.RIFE import get_learning_rate
 import cv2
 import os
 from PIL import Image
@@ -335,14 +335,10 @@ class InterpFlowModel:
         self.j = 0
         self.frame_position = 0
         self.video_predict = video_dr
-        self.temp_dir_output = "temp_output"
         self.cap = cv2.VideoCapture(self.video_predict)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
-        if os.path.exists(self.temp_dir_output):
-            shutil.rmtree(self.temp_dir_output)
-        os.makedirs(self.temp_dir_output, exist_ok=True)
         if use_pre_trained_rife:
             print("using pretrained model")
             if path_to_trt:
@@ -398,11 +394,11 @@ class InterpFlowModel:
                 return
 
             else:
-                from InterpFlow.best_model.RIFE_HDv3 import Model as Model_2
+                from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
                 self.model = Model_2()
                 self.model.eval()
                 script_dir = os.path.dirname(os.path.realpath(__file__))
-                model_path = os.path.join(script_dir, "best_model")
+                model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
                 self.model.load_model(model_path)
 
                 while True:

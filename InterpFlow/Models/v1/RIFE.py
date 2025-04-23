@@ -1,15 +1,11 @@
 import torch.optim as optim
 import itertools
 from torch.nn.parallel import DistributedDataParallel as DDP
-from InterpFlow.old_model.IFNet import *
+from InterpFlow.Models.v1.IFNet import *
 from InterpFlow.loss import *
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CyclicLR
-from torch.utils.data import DataLoader, TensorDataset
-from torch.utils.data import Dataset, DataLoader
-import time
 import math
-import matplotlib.pyplot as plt
+
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

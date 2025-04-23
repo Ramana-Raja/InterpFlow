@@ -1,6 +1,6 @@
 from torch.optim import AdamW
 from torch.nn.parallel import DistributedDataParallel as DDP
-from InterpFlow.best_model.IFNet_HDv3 import *
+from InterpFlow.Models.v3.IFNet_HDv3 import *
 from InterpFlow.loss import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
