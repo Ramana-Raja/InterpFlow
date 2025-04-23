@@ -1,8 +1,5 @@
 import torch
 import torch.nn as nn
-import numpy as np
-import torch.optim as optim
-import itertools
 from InterpFlow.warp import warp
 import torch.nn.functional as F
 
