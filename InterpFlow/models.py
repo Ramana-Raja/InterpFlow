@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader, TensorDataset
 import time
 import matplotlib.pyplot as plt
 import shutil
-
 from sys import stdout
+
 def print_progress_bar(current, total, length=30, prefix='Progress'):
     percent = current / total
     filled_len = int(length * percent)
@@ -122,11 +122,6 @@ class InterpFlowModel:
 
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
-
-    def delete_files_predict(self):
-
-        if os.path.exists(self.temp_dir_output):
-            shutil.rmtree(self.temp_dir_output)
 
     def make_nparray_for_train(self,
                                max_frames=1000,
@@ -314,22 +309,13 @@ class InterpFlowModel:
         if (save_folder):
             self.model.save_model(path=save_folder,
                          rank=0)
-        # self.delete_files_train()
+        self.delete_files_train()
 
     def load_model(self,loc=""):
         script_dir = os.path.dirname(os.path.realpath(__file__))
         model_path = os.path.join(script_dir, loc)
         self.model.load_model(path=model_path,rank=0)
 
-    def save_images_on_batch(self,x,temp,x_1):
-        for i in range(self.batch):
-            if self.j == 0:
-                cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x[i])
-                self.j += 1
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), temp[i])
-            self.j += 1
-            cv2.imwrite(os.path.join(self.temp_dir_output, f"{self.j}.png"), x_1[i])
-            self.j += 1
     def predict(self,
                 use_pre_trained_rife=True,
                 output_folder="",
