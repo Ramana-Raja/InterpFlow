@@ -52,6 +52,7 @@ class InterpFlowModel:
                 break
 
         cap.release()
+
     def create_images_for_predict(self,width=None,height=None):
 
         if self.frame_position >= self.total_frames:
@@ -118,6 +119,7 @@ class InterpFlowModel:
         x_1 = np.array(x_1).transpose(0, 3, 1, 2)  # Change shape to (N, C, H, W)
 
         return x_0,x_1
+
     def delete_files_train(self):
 
         if os.path.exists(self.temp_dir):
@@ -220,6 +222,7 @@ class InterpFlowModel:
             plt.imshow(display_list[i]*225)
             plt.axis('off')
         plt.show()
+
     def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4):
 
         model = self.model()
@@ -240,17 +243,18 @@ class InterpFlowModel:
         )
 
         print(f"ONNX model exported to: {output_path}")
-    def build_rtr_engine(self,onnx_path,engine_file_path="model.trt"):
+    def build_rtr_engine(self,
+                         onnx_path,
+                         engine_file_path="model.trt",
+                         precision_mode = "fp16",
+                         use_int8_precision = False,
+                         workspace_size_gb = 10,
+                         verbose_logging = True) :
 
         from InterpFlow.TRT.TRTEngineBuilder import EngineBuilder
 
-          # Change to your ONNX model path
         onnx_model_path = onnx_path
-        engine_file_path = engine_file_path  # Change to your desired output path
-        precision_mode = "fp16"  # Choose "fp16" or "fp32"
-        use_int8_precision = False  # Set to True if you want to use INT8 (ensure your hardware supports it)
-        workspace_size_gb = 10  # Max memory workspace in GB for optimization
-        verbose_logging = True  # Enable verbose logging for detailed output
+        engine_file_path = engine_file_path
 
         builder = EngineBuilder(verbose=verbose_logging, workspace=workspace_size_gb)
 
@@ -306,6 +310,7 @@ class InterpFlowModel:
                 print_progress_bar(i + 1, total_batches, prefix=f"Epoch {p + 1}/{epochs}")
                 stdout.write(f" - loss: {loss:.12f} - time: {time1:.2f}s")
                 stdout.flush()
+        self.fitted = True
         if (save_folder):
             self.model.save_model(path=save_folder,
                          rank=0)
@@ -315,9 +320,9 @@ class InterpFlowModel:
         script_dir = os.path.dirname(os.path.realpath(__file__))
         model_path = os.path.join(script_dir, loc)
         self.model.load_model(path=model_path,rank=0)
+        self.fitted = True
 
     def predict(self,
-                use_pre_trained_rife=True,
                 output_folder="",
                 video_dr="",
                 batch=1,
@@ -325,10 +330,14 @@ class InterpFlowModel:
                 output_width=1280,
                 output_height=720):
 
+        if not self.fitted:
+            from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
+            self.model = Model_2()
+            self.model.eval()
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
+            self.model.load_model(model_path)
 
-        if (path_to_trt):
-            from InterpFlow.TRT.TRTReader import TRTInference
-            trt_model = TRTInference(path_to_trt)
         video_writer = None
 
         self.batch = batch
@@ -339,9 +348,7 @@ class InterpFlowModel:
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
-        if use_pre_trained_rife:
-            print("using pretrained model")
-            if path_to_trt:
+        if path_to_trt:
                 print("using trt model")
                 from InterpFlow.TRT.TRTReader import TRTInference
                 trt_model = TRTInference(path_to_trt)
@@ -383,118 +390,15 @@ class InterpFlowModel:
                         print_progress_bar(self.j, self.total_frames)
                     for i in range(self.batch):
                         video_writer.write(temp[i])
-                        # self.j +=1
-                        # print_progress_bar(self.j, self.total_frames)
+                        self.j +=1
+                        print_progress_bar(self.j, self.total_frames)
                         video_writer.write(x_1[i])
                         self.j += 1
                         print_progress_bar(self.j, self.total_frames)
-                        print_progress_bar(self.j, self.total_frames)
+
                 print_progress_bar(self.total_frames, self.total_frames)
                 video_writer.release()
                 return
-
-            else:
-                from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
-                self.model = Model_2()
-                self.model.eval()
-                script_dir = os.path.dirname(os.path.realpath(__file__))
-                model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
-                self.model.load_model(model_path)
-
-                while True:
-                    x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
-
-                    if x is None or x_1 is None:
-                        break
-
-                    x = torch.tensor(x).to(self.device)
-                    x_1 = torch.tensor(x_1).to(self.device)
-                    temp = self.model.inference(x, x_1)
-
-                    temp = temp.permute(0, 2, 3, 1)
-                    temp = temp.detach().cpu().numpy()
-
-                    x = x.permute(0, 2, 3, 1)
-                    x = x.detach().cpu().numpy()
-
-                    x_1 = x_1.permute(0, 2, 3, 1)
-                    x_1 = x_1.detach().cpu().numpy()
-
-                    if temp.shape != x.shape:
-                        temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
-
-                    temp = (temp * 255).clip(0, 255).astype(np.uint8)
-                    x = (x * 255).clip(0, 255).astype(np.uint8)
-                    x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
-                    temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
-                    x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
-                    x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
-
-                    if video_writer is None:
-                        height, width, _ = x[0].shape
-
-                        output_video_path = os.path.join(output_folder, "output_video.mp4")
-
-                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                        video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
-                        video_writer.write(x[0])
-                        self.j += 1
-                        print_progress_bar(self.j, self.total_frames)
-                    for i in range(self.batch):
-                        video_writer.write(temp[i])
-                        # self.j +=1
-                        # print_progress_bar(self.j, self.total_frames)
-                        video_writer.write(x_1[i])
-                        self.j += 1
-                        print_progress_bar(self.j, self.total_frames)
-                print_progress_bar(self.total_frames, self.total_frames)
-                video_writer.release()
-                return
-        if path_to_trt:
-            while True:
-                x, x_1 = self.create_images_for_predict(width=output_width,height=output_height)
-                if x is None or x_1 is None:
-                    break
-
-                result = np.concatenate((x, x_1), axis=1)
-
-                temp = trt_model.infer(result)
-
-                temp = np.transpose(temp, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-                x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-                x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-
-                if temp.shape != x.shape:
-                    temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
-
-                temp = (temp * 255).clip(0, 255).astype(np.uint8)
-                x = (x * 255).clip(0, 255).astype(np.uint8)
-                x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
-                temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
-                x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
-                x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
-                # self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
-
-                if video_writer is None:
-                    height, width, _ = x[0].shape
-
-                    output_video_path = os.path.join(output_folder, "output_video.mp4")
-
-                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-
-                    video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
-                    video_writer.write(x[0])
-                    self.j += 1
-                    print_progress_bar(self.j, self.total_frames)
-                for i in range(self.batch):
-                    video_writer.write(temp[i])
-                    # self.j +=1
-                    # print_progress_bar(self.j, self.total_frames)
-                    video_writer.write(x_1[i])
-                    self.j += 1
-                    print_progress_bar(self.j, self.total_frames)
-            print_progress_bar(self.total_frames, self.total_frames)
-            video_writer.release()
 
         else:
             while True:
@@ -537,8 +441,8 @@ class InterpFlowModel:
                 for i in range(self.batch):
 
                     video_writer.write(temp[i])
-                    # self.j +=1
-                    # print_progress_bar(self.j, self.total_frames)
+                    self.j +=1
+                    print_progress_bar(self.j, self.total_frames)
                     video_writer.write(x_1[i])
                     self.j +=1
                     print_progress_bar(self.j, self.total_frames)
