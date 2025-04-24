@@ -1,4 +1,4 @@
-# Frame Generator Using RIFE
+# InterpFlow
 
 ## Overview
 
