@@ -56,39 +56,3 @@ class TRTInference:
 
         self.stream.synchronize()
         return np.array(self.bindings[output_name]["host"].reshape(self.bindings[output_name]["shape"]))
-
-# session = ort.InferenceSession('C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model.onnx')
-#
-# # Create dummy input (make sure the input shape matches the model's input)
-# dummy_input = np.random.randn(16, 6, 480, 640).astype(np.float32)  # Example: (batch_size, channels, height, width)
-# tensor = torch.tensor(dummy_input).to("cuda")
-# # Run inference
-#
-# # ONNX
-# s = time.time()
-# outputs = session.run(None, {'input': dummy_input})
-# outputs = np.array(outputs)
-# e = time.time()
-# print("onnx", e - s)
-#
-# # Real model
-# m = RifeModel()
-# m.load_model(path="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\experimental_save_model", rank=0)
-# s = time.time()
-# temp = m.inference(tensor)
-# e = time.time()
-# print("real", e - s)
-#
-# # TensorRT
-# trt_model = TRTInference("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\path_to_save_model.trt")
-#
-# s = time.time()
-# trt_output = trt_model.infer(dummy_input)
-# trt_output = np.array(trt_output)
-# e = time.time()
-# print("tensorrt", e - s)
-#
-# # The outputs will be a list of the model's output tensors
-# print(outputs.shape)
-# print(temp.shape)
-# print("hello",trt_output.shape)
