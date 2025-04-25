@@ -104,24 +104,3 @@ class EngineBuilder:
             log.info("Serializing engine to file: {:}".format(engine_path))
             f.write(engine_bytes)
         return True
-
-
-def main():
-    # Define paths and parameters directly
-    onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model.onnx"  # Change to your ONNX model path
-    engine_file_path = "path_to_save_model.trt"  # Change to your desired output path
-    precision_mode = "fp16"  # Choose "fp16" or "fp32"
-    use_int8_precision = False  # Set to True if you want to use INT8 (ensure your hardware supports it)
-    workspace_size_gb = 10  # Max memory workspace in GB for optimization
-    verbose_logging = True  # Enable verbose logging for detailed output
-
-    # Create an EngineBuilder instance and build the model
-    builder = EngineBuilder(verbose=verbose_logging, workspace=workspace_size_gb)
-
-    # Load the ONNX model and create the TensorRT engine
-    if builder.create_network(onnx_model_path):
-        builder.create_engine(engine_file_path, precision=precision_mode, use_int8=use_int8_precision)
-
-
-if __name__ == "__main__":
-    main()
