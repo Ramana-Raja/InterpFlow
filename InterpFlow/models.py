@@ -243,6 +243,8 @@ class InterpFlowModel:
         )
 
         print(f"ONNX model exported to: {output_path}")
+
+
     def build_rtr_engine(self,
                          onnx_path,
                          engine_file_path="model.trt",
@@ -448,59 +450,3 @@ class InterpFlowModel:
                     print_progress_bar(self.j, self.total_frames)
         print_progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
-# m = frame_generator(fps=25)
-# m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\new_rife_model_weights")
-# # print("loaded model")
-# folder_path = r'C:\Users\raman\Downloads\New folder (3)'
-# video_files = [
-#     os.path.join(folder_path, f)
-#     for f in os.listdir(folder_path)
-#     if f.lower().endswith('.mp4')
-# ]
-# for video in video_files:
-#     m.fit(video_loc=video,
-#       batch=4,
-#       start_frame=0,
-#       max_frames=500,
-#       width=800,
-#       height=800,
-#       delete_previous=True,
-#       save_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model",
-#       epochs=10)
-#
-#     m.load_model("C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\best_model")
-#     print(f"finsied{i} ")
-#
-
-# print("model loaded")
-
-# trt = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\saved_trt_models\\model_batch_12_pretrained.trt"
-# s = time.time()
-# m.predict(video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\13473444_1920_1080_30fps.mp4",
-#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-#           batch=12,
-#           path_to_trt = trt,
-#           output_width=640,
-#           output_height=480)
-# e = time.time()
-#
-# print(e-s)
-# # import time
-# s = time.time()
-# m.predict(use_pre_trained_rife=True,
-#           video_dr="C:\\Users\\raman\\Downloads\\New folder (3)\\demo.mp4",
-#           output_folder="C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\video",
-#           batch=16,
-#           output_width=640,
-#           output_height=480,
-#           path_to_trt=trt)
-# e = time.time()
-#
-# print(e-s)
-# WORKING_DIR = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation"
-# # # # # ENGINE_FILE_PATH = os.path.join(WORKING_DIR, 'rife_model_trt.engine')
-# ONNX_MODEL_PATH = os.path.join(WORKING_DIR, 'rife_model_new_batch_16_pretrained.onnx')
-# m.export_model_to_onnx(ONNX_MODEL_PATH,batch=16)
-# onnx_model_path = "C:\\Users\\raman\\PycharmProjects\\frame_generation\\frame_generation\\rife_model_new_batch_16_pretrained.onnx"
-# m.build_rtr_engine(onnx_model_path,engine_file_path="model_batch_12_pretrained.trt")
-
