@@ -18,13 +18,15 @@ class App(ctk.CTk):
 
         self.mainloop()
 
-    def import_func(self, video_dr, output_folder, progress_callback):
-        print("Video path:", video_dr)
-        print("Output folder:", output_folder)
+    def import_func(self,batch,
+            output_width,
+            output_height,
+            path_to_trt,
+            video_dr, output_folder, progress_callback):
 
-        batch = 12
-        width = 680
-        height = 480
+        batch = batch
+        width = output_width
+        height = output_height
         path_to_trt = None  # Optional TensorRT
 
         # Call your model here
