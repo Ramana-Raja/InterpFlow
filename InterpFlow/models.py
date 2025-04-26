@@ -22,6 +22,7 @@ class InterpFlowModel:
     def __init__(self):
         self.model = main_model()
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.fitted = False
 
     def create_images(self,delete_previous=True):
 
@@ -330,7 +331,8 @@ class InterpFlowModel:
                 batch=1,
                 path_to_trt=None,
                 output_width=1280,
-                output_height=720):
+                output_height=720,
+                progress_callback=None):
 
         if not self.fitted:
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
@@ -341,7 +343,10 @@ class InterpFlowModel:
             self.model.load_model(model_path)
 
         video_writer = None
-
+        if progress_callback:
+            progress_bar = progress_callback
+        else:
+            progress_bar = print_progress_bar
         self.batch = batch
         self.j = 0
         self.frame_position = 0
@@ -389,16 +394,14 @@ class InterpFlowModel:
                         video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
                         video_writer.write(x[0])
                         self.j += 1
-                        print_progress_bar(self.j, self.total_frames)
+                        progress_bar(self.j, self.total_frames)
                     for i in range(self.batch):
                         video_writer.write(temp[i])
-                        self.j +=1
-                        print_progress_bar(self.j, self.total_frames)
                         video_writer.write(x_1[i])
                         self.j += 1
-                        print_progress_bar(self.j, self.total_frames)
+                        progress_bar(self.j, self.total_frames)
 
-                print_progress_bar(self.total_frames, self.total_frames)
+                progress_bar(self.total_frames, self.total_frames)
                 video_writer.release()
                 return
 
@@ -409,16 +412,19 @@ class InterpFlowModel:
                 if x is None or x_1 is None:
                     break
 
-                result = np.concatenate((x, x_1), axis=1)
-                tensor = torch.tensor(result).to(self.device)
-                temp = self.model.inference(tensor)
+                x = torch.tensor(x).to(self.device)
+                x_1 = torch.tensor(x_1).to(self.device)
+                temp = self.model.inference(x,x_1)
 
                 temp = temp.permute(0, 2, 3, 1)
                 temp = temp.detach().cpu().numpy()
 
+                x = x.permute(0, 2, 3, 1)
+                x = x.detach().cpu().numpy()
 
-                x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-                x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                x_1 = x_1.permute(0, 2, 3, 1)
+                x_1 = x_1.detach().cpu().numpy()
+
 
                 if temp.shape != x.shape:
                     temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
@@ -439,14 +445,11 @@ class InterpFlowModel:
                     video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
                     video_writer.write(x[0])
                     self.j += 1
-                    print_progress_bar(self.j, self.total_frames)
+                    progress_bar(self.j, self.total_frames)
                 for i in range(self.batch):
-
                     video_writer.write(temp[i])
-                    self.j +=1
-                    print_progress_bar(self.j, self.total_frames)
                     video_writer.write(x_1[i])
                     self.j +=1
-                    print_progress_bar(self.j, self.total_frames)
-        print_progress_bar(self.total_frames, self.total_frames)
+                    progress_bar(self.j, self.total_frames)
+        progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
