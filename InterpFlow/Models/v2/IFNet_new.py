@@ -54,7 +54,7 @@ class IFNet(nn.Module):
     def __init__(self):
         super(IFNet, self).__init__()
         self.block0 = IFBlock(6, c=240)
-        self.block1 = IFBlock(13 + 4, c=150)
+        self.block1 = IFBlock(13 + 4, c=150)# 4 for flow
         self.block2 = IFBlock(13 + 4, c=90)
         self.block_tea = IFBlock(16 + 4, c=90)
         self.contextnet = Contextnet()
@@ -103,8 +103,8 @@ class IFNet(nn.Module):
             merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
             if gt.shape[1] == 3:
                 loss_mask = ((merged[i] - gt).abs().mean(1, True) > (merged_teacher - gt).abs().mean(1,
-                                                                                                     True) + 0.01).float().detach()
-                loss_distill += (((flow_teacher.detach() - flow_list[i]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean()
+                                                                                                     True) + 0.01).float().detach() #makes model produce better warp
+                loss_distill += (((flow_teacher.detach() - flow_list[i]) ** 2).mean(1, True) ** 0.5 * loss_mask).mean() #makes model produce better flow
         c0 = self.contextnet(img0, flow[:, :2])
         c1 = self.contextnet(img1, flow[:, 2:4])
         tmp = self.unet(img0, img1, warped_img0, warped_img1, mask, flow, c0, c1)

@@ -47,8 +47,7 @@ class Model(nn.Module):
         if rank == 0:
             torch.save(self.flownet.state_dict(),'{}/flownet.pkl'.format(path))
 
-    def inference(self, img0, img1, timestep=0.5, scale=1):
-        imgs = torch.cat((img0, img1), 1)
+    def inference(self, imgs, timestep=0.5, scale=1):
         scale_list = [16/scale, 8/scale, 4/scale, 2/scale, 1/scale]
         flow, mask, merged = self.flownet(imgs, timestep, scale_list)
         return merged[-1]

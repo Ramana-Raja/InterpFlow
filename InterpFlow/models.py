@@ -224,14 +224,17 @@ class InterpFlowModel:
             plt.axis('off')
         plt.show()
 
-    def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4):
+    def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4,pretrained=False):
 
-        model = self.model()
-        model.eval()
+        if pretrained:
+            from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
+            model = Model_2()
+            model.eval()
+        else:
+            model = self.model
+            model.eval()
 
         dummy_input = torch.randn(batch, 6, img_size[0], img_size[1]).to(self.device)
-        self.trt_0 = img_size[0]
-        self.trt_1 = img_size[1]
         torch.onnx.export(
         model,
         dummy_input,
@@ -242,28 +245,35 @@ class InterpFlowModel:
         input_names=['input'],
         output_names=['output'],
         )
-
+        self.output_path = output_path
         print(f"ONNX model exported to: {output_path}")
 
 
     def build_rtr_engine(self,
-                         onnx_path,
-                         engine_file_path="model.trt",
+                         onnx_path=None,
                          precision_mode = "fp16",
                          use_int8_precision = False,
                          workspace_size_gb = 10,
                          verbose_logging = True) :
-
+        if not onnx_path:
+            if self.output_path:
+                onnx_model_path = self.output_path
+            else:
+                raise RuntimeError("No onnx_path provided")
+        else:
+            onnx_model_path = onnx_path
         from InterpFlow.TRT.TRTEngineBuilder import EngineBuilder
+        from pathlib import Path
 
-        onnx_model_path = onnx_path
-        engine_file_path = engine_file_path
+        onnx_model_path = Path(onnx_model_path)
+        filename = onnx_model_path.name
+        trt_filename = Path(filename).with_suffix(".trt")
+        trt_model_path = onnx_model_path.parent.parent / "trt_models" / trt_filename
 
         builder = EngineBuilder(verbose=verbose_logging, workspace=workspace_size_gb)
 
-        # Load the ONNX model and create the TensorRT engine
         if builder.create_network(onnx_model_path):
-            builder.create_engine(engine_file_path, precision=precision_mode, use_int8=use_int8_precision)
+            builder.create_engine(trt_model_path, precision=precision_mode, use_int8=use_int8_precision)
 
 
     def fit(self,
@@ -334,13 +344,8 @@ class InterpFlowModel:
                 output_height=720,
                 progress_callback=None):
 
-        if not self.fitted:
-            from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
-            self.model = Model_2()
-            self.model.eval()
-            script_dir = os.path.dirname(os.path.realpath(__file__))
-            model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
-            self.model.load_model(model_path)
+
+
 
         video_writer = None
         if progress_callback:
@@ -355,7 +360,65 @@ class InterpFlowModel:
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
-        if path_to_trt:
+
+
+
+        if not self.fitted:
+            from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
+            self.model = Model_2()
+            self.model.eval()
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
+            self.model.load_model(model_path)
+
+            while True:
+                x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
+
+                if x is None or x_1 is None:
+                    break
+
+                x = torch.tensor(x).to(self.device)
+                x_1 = torch.tensor(x_1).to(self.device)
+                imgs = torch.cat((x, x_1), 1)
+                temp = self.model.inference(imgs)
+
+                temp = temp.permute(0, 2, 3, 1)
+                temp = temp.detach().cpu().numpy()
+
+                x = x.permute(0, 2, 3, 1)
+                x = x.detach().cpu().numpy()
+
+                x_1 = x_1.permute(0, 2, 3, 1)
+                x_1 = x_1.detach().cpu().numpy()
+
+                if temp.shape != x.shape:
+                    temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
+
+                temp = (temp * 255).clip(0, 255).astype(np.uint8)
+                x = (x * 255).clip(0, 255).astype(np.uint8)
+                x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+                temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
+                x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
+                x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
+
+                if video_writer is None:
+                    height, width, _ = x[0].shape
+
+                    output_video_path = os.path.join(output_folder, "output_video.mp4")
+
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
+                    video_writer.write(x[0])
+                    self.j += 1
+                    progress_bar(self.j, self.total_frames)
+                for i in range(self.batch):
+                    video_writer.write(temp[i])
+                    video_writer.write(x_1[i])
+                    self.j += 1
+                    progress_bar(self.j, self.total_frames)
+            progress_bar(self.total_frames, self.total_frames)
+            video_writer.release()
+        elif path_to_trt:
                 print("using trt model")
                 from InterpFlow.TRT.TRTReader import TRTInference
                 trt_model = TRTInference(path_to_trt)
@@ -414,7 +477,8 @@ class InterpFlowModel:
 
                 x = torch.tensor(x).to(self.device)
                 x_1 = torch.tensor(x_1).to(self.device)
-                temp = self.model.inference(x,x_1)
+                imgs = torch.cat((x, x_1), 1)
+                temp = self.model.inference(imgs)
 
                 temp = temp.permute(0, 2, 3, 1)
                 temp = temp.detach().cpu().numpy()

@@ -48,7 +48,7 @@ class Contextnet(nn.Module):
     def forward(self, x, flow):
         x = self.conv1(x)
         flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False,
-                             recompute_scale_factor=False) * 0.5
+                             recompute_scale_factor=False) * 0.5 #for mag
         f1 = warp(x, flow)
         x = self.conv2(x)
         flow = F.interpolate(flow, scale_factor=0.5, mode="bilinear", align_corners=False,
