@@ -1,5 +1,6 @@
 from gui.GUI import *
 from InterpFlow import InterpFlowModel
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
