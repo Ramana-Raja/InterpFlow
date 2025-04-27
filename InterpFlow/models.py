@@ -344,9 +344,6 @@ class InterpFlowModel:
                 output_height=720,
                 progress_callback=None):
 
-
-
-
         video_writer = None
         if progress_callback:
             progress_bar = progress_callback
