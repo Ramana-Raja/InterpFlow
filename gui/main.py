@@ -1,5 +1,7 @@
 from gui.GUI import *
 from InterpFlow import InterpFlowModel
+import os.path
+import re
 
 class App(ctk.CTk):
     def __init__(self):
@@ -21,22 +23,32 @@ class App(ctk.CTk):
     def import_func(self,batch,
             output_width,
             output_height,
-            path_to_trt,
-            video_dr, output_folder, progress_callback):
+            use_to_trt,
+            video_dr,
+            output_folder,
+            progress_callback):
 
         batch = batch
         width = output_width
         height = output_height
-        path_to_trt = None  # Optional TensorRT
+        trt = None
+        if use_to_trt:
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            trt_dir = os.path.join(script_dir, 'trained_models', 'trt_models')
+            pattern = f"model_{height}_{width}_{batch}.trt"
 
-        # Call your model here
+            for root, dirs, files in os.walk(trt_dir):
+             for file in files:
+                if re.match(pattern, file):
+                    trt = os.path.join(root, file)
+
         self.m.predict(
             video_dr=video_dr,
             output_folder=output_folder,
             batch=batch,
             output_width=width,
             output_height=height,
-            path_to_trt=path_to_trt,
-            progress_callback=progress_callback
+            path_to_trt=trt,
+            progress_callback=progress_callback,
         )
 App()

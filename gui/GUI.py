@@ -108,7 +108,7 @@ class VideoImport(ctk.CTkFrame):
             batch=batch,
             output_width=width,
             output_height=height,
-            path_to_trt=path_to_trt,
+            use_to_trt=path_to_trt,
             progress_callback=self.update_progress
         )
 
@@ -120,3 +120,6 @@ class VideoImport(ctk.CTkFrame):
         percent = current / total
         self.progress_bar.set(percent)
         self.progress_bar.update()
+
+        if percent == 1.0:
+            self.update_status("🎬 Video Exported!", success=True)
