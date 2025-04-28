@@ -1,4 +1,3 @@
-from InterpFlow.Models.v2.RIFE_NEW import Model as main_model
 from InterpFlow.Models.v1.RIFE import get_learning_rate
 import cv2
 import os
@@ -19,8 +18,16 @@ def print_progress_bar(current, total, length=30, prefix='Progress'):
     stdout.flush()
 
 class InterpFlowModel:
-    def __init__(self):
-        self.model = main_model()
+    def __init__(self,version='v3'):
+        if version == 'v1':
+            from InterpFlow.Models.v1.RIFE import Model as main_model
+            self.model = main_model()
+        if version == 'v2':
+            from InterpFlow.Models.v2.RIFE_NEW import Model as main_model
+            self.model = main_model()
+        else:
+            from InterpFlow.Models.v3.RIFE_HDv3 import Model as main_model
+            self.model = main_model()
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.fitted = False
 
