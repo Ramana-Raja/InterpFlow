@@ -45,7 +45,7 @@ class VideoImport(ctk.CTkFrame):
         self.model_var = ctk.StringVar(value="v1")
         self.trt_var = ctk.BooleanVar(value=False)
 
-        ctk.CTkLabel(input_frame, text="Batch:").grid(row=0, column=0, padx=(5, 0))
+        ctk.CTkLabel(input_frame, text="Batch:").grid(row=0, column=1, padx=(5, 0))
         self.batch_entry = ctk.CTkEntry(input_frame, textvariable=self.batch_var, width=60)
         self.batch_entry.grid(row=0, column=2, padx=(0, 10))
 
