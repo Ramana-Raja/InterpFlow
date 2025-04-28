@@ -25,9 +25,11 @@ class InterpFlowModel:
         if version == 'v2':
             from InterpFlow.Models.v2.RIFE_NEW import Model as main_model
             self.model = main_model()
-        else:
+        if version == 'v3':
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as main_model
             self.model = main_model()
+        else:
+            raise ValueError(f"{version} Does not exist only v1, v2, v3 avaliable")
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.fitted = False
 
@@ -342,7 +344,7 @@ class InterpFlowModel:
         self.model.load_model(path=model_path,rank=0)
         self.fitted = True
 
-    def predict_without_exception(self,
+    def predict_wihtout_try(self,
                 output_folder="",
                 video_dr="",
                 batch=1,
@@ -350,6 +352,8 @@ class InterpFlowModel:
                 output_width=1280,
                 output_height=720,
                 progress_callback=None):
+        if batch<1:
+            raise ValueError(f"{batch} cannot be the size of batch")
 
         video_writer = None
         if progress_callback:
@@ -364,8 +368,6 @@ class InterpFlowModel:
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
-
-
 
         if not self.fitted:
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
