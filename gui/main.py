@@ -48,7 +48,7 @@ class App(ctk.CTk):
                 if re.match(pattern, file):
                     trt = os.path.join(root, file)
         try:
-            self.m.predict_with_exception(
+            self.m.predict(
                 video_dr=video_dr,
                 output_folder=output_folder,
                 batch=int(batch),

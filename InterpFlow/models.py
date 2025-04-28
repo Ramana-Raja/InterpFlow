@@ -18,14 +18,14 @@ def print_progress_bar(current, total, length=30, prefix='Progress'):
     stdout.flush()
 
 class InterpFlowModel:
-    def __init__(self,version='v3'):
-        if version == 'v1':
+    def __init__(self,version="v3"):
+        if version == "v1":
             from InterpFlow.Models.v1.RIFE import Model as main_model
             self.model = main_model()
-        if version == 'v2':
+        if version == "v2":
             from InterpFlow.Models.v2.RIFE_NEW import Model as main_model
             self.model = main_model()
-        if version == 'v3':
+        if version == "v3":
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as main_model
             self.model = main_model()
         else:
@@ -537,7 +537,7 @@ class InterpFlowModel:
                 progress_callback=None,
                 error_callback=None):
         try:
-            self.predict(
+            self.predict_wihtout_try(
                 video_dr=video_dr,
                 output_folder=output_folder,
                 batch=batch,
