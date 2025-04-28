@@ -6,7 +6,6 @@ import re
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.m = InterpFlowModel()
         ctk.set_appearance_mode('dark')
         self.geometry('1000x600')
         self.title('InterpFlow')
@@ -20,14 +19,16 @@ class App(ctk.CTk):
 
         self.mainloop()
 
-    def import_func(self,batch,
+    def import_func(self,
+            version,
+            batch,
             output_width,
             output_height,
             use_to_trt,
             video_dr,
             output_folder,
             progress_callback):
-
+        self.m = InterpFlowModel(version)
         batch = batch
         width = output_width
         height = output_height
@@ -45,9 +46,9 @@ class App(ctk.CTk):
         self.m.predict(
             video_dr=video_dr,
             output_folder=output_folder,
-            batch=batch,
-            output_width=width,
-            output_height=height,
+            batch=int(batch),
+            output_width=int(width),
+            output_height=int(height),
             path_to_trt=trt,
             progress_callback=progress_callback,
         )
