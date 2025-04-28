@@ -352,8 +352,12 @@ class InterpFlowModel:
                 output_width=1280,
                 output_height=720,
                 progress_callback=None):
+
         if batch<1:
             raise ValueError(f"{batch} cannot be the size of batch")
+
+        if output_height < 0 or output_width<0:
+            raise ValueError(f"{output_width} and {output_height} cannot be output size")
 
         video_writer = None
         if progress_callback:
@@ -425,7 +429,6 @@ class InterpFlowModel:
             progress_bar(self.total_frames, self.total_frames)
             video_writer.release()
         elif path_to_trt:
-                print("using trt model")
                 from InterpFlow.TRT.TRTReader import TRTInference
                 trt_model = TRTInference(path_to_trt)
 
