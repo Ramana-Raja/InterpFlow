@@ -74,6 +74,14 @@ class VideoImport(ctk.CTkFrame):
         self.progress_bar.grid(row=1, column=0, sticky="ew", padx=0)
         self.progress_bar.grid_remove()
 
+        self.status_label = ctk.CTkLabel(self.card, text="", text_color="green")
+        self.status_label.grid(row=3, column=0, pady=10)
+
+        # Error label (new!)
+        self.error_label = ctk.CTkLabel(self.card, text="", text_color="red")
+        self.error_label.grid(row=4, column=0, pady=10)  # notice row=4 to be below status
+        self.error_label.grid_remove()  # Hide it at start
+
         # Store paths
         self.video_path = None
         self.output_folder = None
@@ -120,9 +128,14 @@ class VideoImport(ctk.CTkFrame):
         )
 
     def update_status(self, message, success=True):
-        color = "green" if success else "red"
-        self.status_label.configure(text=message, text_color=color)
-
+        if success:
+            self.status_label.configure(text=message, text_color="green")
+            self.error_label.grid_remove()  # hide error
+            self.status_label.grid()  # show normal status
+        else:
+            self.error_label.configure(text=message, text_color="red")
+            self.status_label.grid_remove()  # hide normal status
+            self.error_label.grid()  # show error
     def update_progress(self, current, total):
         percent = current / total
         self.progress_bar.set(percent)
