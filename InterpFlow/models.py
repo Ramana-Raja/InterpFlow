@@ -473,6 +473,7 @@ class InterpFlowModel:
                 return
 
         else:
+            self.model.eval()
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width,height=output_height)
 
