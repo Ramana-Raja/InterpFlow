@@ -342,7 +342,7 @@ class InterpFlowModel:
         self.model.load_model(path=model_path,rank=0)
         self.fitted = True
 
-    def predict(self,
+    def predict_without_exception(self,
                 output_folder="",
                 video_dr="",
                 batch=1,
@@ -522,3 +522,26 @@ class InterpFlowModel:
                     progress_bar(self.j, self.total_frames)
         progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
+    def predict(self,
+                output_folder="",
+                video_dr="",
+                batch=1,
+                path_to_trt=None,
+                output_width=1280,
+                output_height=720,
+                progress_callback=None,
+                error_callback=None):
+        try:
+            self.predict(
+                video_dr=video_dr,
+                output_folder=output_folder,
+                batch=batch,
+                output_width=output_width,
+                output_height=output_height,
+                path_to_trt=path_to_trt,
+                progress_callback=progress_callback)
+        except Exception as e:
+            if error_callback:
+                error_callback(e)
+            else:
+                raise e
