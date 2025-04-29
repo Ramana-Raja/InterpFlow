@@ -1,16 +1,10 @@
-from InterpFlow.Models.v1.RIFE import get_learning_rate
 import cv2
 import os
-from PIL import Image
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, TensorDataset
-import time
-import matplotlib.pyplot as plt
-import shutil
-from sys import stdout
 
 def print_progress_bar(current, total, length=30, prefix='Progress'):
+    from sys import stdout
     percent = current / total
     filled_len = int(length * percent)
     bar = '=' * filled_len + '.' * (length - filled_len)
@@ -25,16 +19,14 @@ class InterpFlowModel:
         if version == "v2":
             from InterpFlow.Models.v2.RIFE_NEW import Model as main_model
             self.model = main_model()
-        if version == "v3":
+        else:
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as main_model
             self.model = main_model()
-        else:
-            raise ValueError(f"{version} Does not exist only v1, v2, v3 avaliable")
         self.device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.fitted = False
 
     def create_images(self,delete_previous=True):
-
+        import shutil
         self.temp_dir = "temp_folder"
         if os.path.exists(self.temp_dir):
             if delete_previous:
@@ -131,7 +123,7 @@ class InterpFlowModel:
         return x_0,x_1
 
     def delete_files_train(self):
-
+        import shutil
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
@@ -140,7 +132,8 @@ class InterpFlowModel:
                                start_frame=0,
                                width=640,
                                height=480):
-
+        from PIL import Image
+        from torch.utils.data import DataLoader, TensorDataset
         x_train = []
         x_train1 = []
         y_train = []
@@ -205,6 +198,8 @@ class InterpFlowModel:
 
     def generate_images(self,prediction, test_input,test_input2, tar):
 
+        import matplotlib.pyplot as plt
+
         prediction = prediction.permute(0, 2, 3, 1)
         prediction = prediction.to("cpu")
         prediction = prediction.detach().numpy()
@@ -234,7 +229,6 @@ class InterpFlowModel:
         plt.show()
 
     def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4,pretrained=False):
-
         if pretrained:
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
             model = Model_2()
@@ -297,6 +291,9 @@ class InterpFlowModel:
             width=None,
             height=None):
 
+        import time
+        from sys import stdout
+        from InterpFlow.Models.v1.RIFE import get_learning_rate
 
         self.batch = batch
         self.dr = video_loc
@@ -344,6 +341,33 @@ class InterpFlowModel:
         self.model.load_model(path=model_path,rank=0)
         self.fitted = True
 
+    def add_audio(self,output_video_path,output_folder):
+        import subprocess
+        import imageio_ffmpeg as ffmpeg
+
+        original_video = self.video_predict
+        temp_output_video = output_video_path  # this is your interpolated video
+        final_output_video = os.path.join(output_folder, "final_output_with_audio.mp4")
+
+        ffmpeg_path = ffmpeg.get_ffmpeg_exe()
+        command = [
+            ffmpeg_path, "-y",
+            "-i", temp_output_video,
+            "-i", original_video,
+            "-c:v", "copy", "-c:a", "aac",
+            "-map", "0:v:0", "-map", "1:a:0",
+            final_output_video
+        ]
+
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def resource_path(self,relative_path):
+        import sys
+        """Returns the correct path whether frozen or not."""
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+
     def predict_wihtout_try(self,
                 output_folder="",
                 video_dr="",
@@ -372,9 +396,16 @@ class InterpFlowModel:
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
+        output_video_path = os.path.join(output_folder, "output_video.mp4")
 
         if not self.fitted:
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
+            # self.model = Model_2()
+            # self.model.eval()
+            #
+            # model_path = self.resource_path("InterpFlow/trained_models/pretrained_for_v3")
+            # self.model.load_model(model_path)
+
             self.model = Model_2()
             self.model.eval()
             script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -428,6 +459,8 @@ class InterpFlowModel:
                     progress_bar(self.j, self.total_frames)
             progress_bar(self.total_frames, self.total_frames)
             video_writer.release()
+            self.add_audio(output_video_path=output_video_path,output_folder=output_folder)
+
         elif path_to_trt:
                 from InterpFlow.TRT.TRTReader import TRTInference
                 trt_model = TRTInference(path_to_trt)

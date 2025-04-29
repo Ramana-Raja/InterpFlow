@@ -60,4 +60,7 @@ class App(ctk.CTk):
             )
         except Exception as e:
             self.handle_error(e)
-App()
+
+if __name__ == "__main__":
+    App()
+
