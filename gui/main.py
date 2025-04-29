@@ -1,7 +1,5 @@
 from gui.GUI import *
-from InterpFlow import InterpFlowModel
-import os.path
-import re
+
 
 class App(ctk.CTk):
     def __init__(self):
@@ -33,7 +31,13 @@ class App(ctk.CTk):
             video_dr,
             output_folder,
             progress_callback):
+
+        from InterpFlow import InterpFlowModel
+        import os.path
+        import re
+
         self.m = InterpFlowModel(version)
+
         batch = batch
         width = output_width
         height = output_height

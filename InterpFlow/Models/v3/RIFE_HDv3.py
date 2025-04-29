@@ -1,5 +1,4 @@
 from torch.optim import AdamW
-from torch.nn.parallel import DistributedDataParallel as DDP
 from InterpFlow.Models.v3.IFNet_HDv3 import *
 from InterpFlow.loss import *
 
@@ -15,8 +14,6 @@ class Model(nn.Module):
         self.version = 4.25
         # self.vgg = VGGPerceptualLoss().to(device)
         self.sobel = SOBEL()
-        if local_rank != -1:
-            self.flownet = DDP(self.flownet, device_ids=[local_rank], output_device=local_rank)
 
     def train_1(self):
         self.flownet.train()
