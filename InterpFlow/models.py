@@ -26,6 +26,17 @@ class InterpFlowModel:
         self.fitted = False
 
     def create_images(self,delete_previous=True):
+        """
+            Creates images needed for training the model
+
+            Parameters
+            ----------
+            delete_previous: Boolean
+                Deletes previous images if present in "temp_folder"
+                might be useful to set false on training on same video
+
+        """
+
         import shutil
         self.temp_dir = "temp_folder"
         if os.path.exists(self.temp_dir):
@@ -56,6 +67,27 @@ class InterpFlowModel:
         cap.release()
 
     def create_images_for_predict(self,width=None,height=None):
+        """
+            Creates images needed for predicting from the video
+
+            Parameters
+            ----------
+            width: int
+                specifies output video width shape, if None then
+                uses video shape
+
+            height: int
+                specifies output video height shape, if None then
+                uses video shape
+
+            Returns
+            -------
+            np.ndarray
+                returns two np.ndarray each containing frames in the format
+                    1st array: [frame0,frame1,frame2....]
+                    2nd array: [frame1.frame2,frame3....]
+
+        """
 
         if self.frame_position >= self.total_frames:
             self.cap.release()
@@ -123,6 +155,10 @@ class InterpFlowModel:
         return x_0,x_1
 
     def delete_files_train(self):
+        """
+            Deletes the temporary folder created when training
+        """
+
         import shutil
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
@@ -132,6 +168,39 @@ class InterpFlowModel:
                                start_frame=0,
                                width=640,
                                height=480):
+        """
+            Creates npdarray of images needed for training the model
+
+            Parameters
+            ----------
+            max_frames: int
+                specifies the number of frames that is going
+                to be used for training
+
+            start_frame: int
+                specifies the starting frame/point for training
+
+            width : int
+                specifies the images width that is going to be
+                used for training
+
+            height: int
+                specifies the images height that is going to be
+                used for training
+
+            Returns
+            -------
+            PyTorch DataLoader contain
+                1st: torch.tensor of images in format [frame0,frame3,frame6....]
+                     actes as img0 for training
+
+                2nd: torch.tensor of images in format [frame1,frame4,frame7....]
+                     actes as ground truth for training
+
+                3rd: torch.tensor of images in format [frame2,frame5,frame8....]
+                     actes as img1 for training
+        """
+
         from PIL import Image
         from torch.utils.data import DataLoader, TensorDataset
         x_train = []
@@ -197,12 +266,30 @@ class InterpFlowModel:
         self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
 
     def generate_images(self,prediction, test_input,test_input2, tar):
+        """
+            Plots the img0, img1, ground_truth and predicted img
+
+            Parameters
+            ----------
+            prediction: torch.tensor
+                predicted image by the model
+
+            test_input: torch.tensor
+                img0
+
+            test_input2 : torch.tensor
+                img1
+
+            tar: torch.tensor
+                Ground Truth
+        """
 
         import matplotlib.pyplot as plt
 
         prediction = prediction.permute(0, 2, 3, 1)
         prediction = prediction.to("cpu")
         prediction = prediction.detach().numpy()
+
         test_input = test_input.permute(0, 2, 3, 1)
         test_input = test_input.to("cpu")
         test_input = test_input.detach().numpy()
@@ -228,14 +315,25 @@ class InterpFlowModel:
             plt.axis('off')
         plt.show()
 
-    def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4,pretrained=False):
-        if pretrained:
-            from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
-            model = Model_2()
-            model.eval()
-        else:
-            model = self.model
-            model.eval()
+    def export_model_to_onnx(self,output_path, img_size=(480, 640),batch=4):
+        """
+            Converts the model to onnx
+
+            Parameters
+            ----------
+            output_path: String
+                Location where the model is going to be saved
+
+            img_size: Tuple
+                The dummy input image shape
+
+            batch : int
+                 Number of batch images going to be used for
+                 predict
+        """
+
+        model = self.model
+        model.eval()
 
         dummy_input = torch.randn(batch, 6, img_size[0], img_size[1]).to(self.device)
         torch.onnx.export(
@@ -262,6 +360,32 @@ class InterpFlowModel:
                          use_int8_precision = False,
                          workspace_size_gb = 10,
                          verbose_logging = True) :
+        """
+            Builds TRT model from onnx
+
+            Parameters
+            ----------
+            onnx_path: String
+                Location where the onnx model is present
+
+            precision_mode: String
+                The precision model that is going to be used
+
+            use_int8_precision : boolean
+                 Use INT8 precision
+
+            workspace_size_gb: int
+                 Maximum VRAM usage while building trt model
+
+            verbose_logging: boolean
+                 Printing all log info in terminal
+
+            Returns
+            ----------
+            TRT Model: A model saved in trained_models/trt_models with onnx file name
+
+        """
+
         if not onnx_path:
             if self.output_path:
                 onnx_model_path = self.output_path
@@ -294,6 +418,47 @@ class InterpFlowModel:
             max_frames=1000,
             width=None,
             height=None):
+
+        """
+            Fits the model with the input video
+
+            Parameters
+            ----------
+            epochs : int
+                Number of epochs for training
+
+            freq : int
+                Plot the prediction of model with the frequency of freq
+                (uses batch for counting frequency)
+
+            save_folder : String
+                 Location where the trained model is going to be saved
+
+            video_loc : String
+                 Location of the video that is going to be used for training
+
+            batch : int
+                 Size of each batch
+
+            delete_previous : Boolean
+                 Deletes if any images present in temp folder of training
+
+            start_frame : int
+                 The starting frame/point of the video that is going to be
+                 used for training
+
+            max_frames: max number of images use for training
+                        Note: since we use three array(img0, ground_truth, img1),
+                        total images will be max_frames*3
+
+            width : int
+                 Width of the image that is going to be used for training
+                 if None , uses video resolution
+
+            height : int
+                 Height of the image that is going to be used for training
+                 if None , uses video resolution
+        """
 
         import time
         from sys import stdout
@@ -340,12 +505,35 @@ class InterpFlowModel:
         self.delete_files_train()
 
     def load_model(self,loc=""):
+        """
+            Loads the fitted model
+
+            Parameters
+            ----------
+            loc : String
+                Location where the fitted model is saved
+
+        """
+
         script_dir = os.path.dirname(os.path.realpath(__file__))
         model_path = os.path.join(script_dir, loc)
         self.model.load_model(path=model_path,rank=0)
         self.fitted = True
 
     def add_audio(self,output_video_path,output_folder):
+        """
+            Adds audio the final video created after interpolation
+
+            Parameters
+            ----------
+            output_video_path : String
+                Location of the output video from interpolation
+
+            output_folder : String
+                 Where the video with audio is going to be saved
+
+        """
+
         import subprocess
         import imageio_ffmpeg as ffmpeg
 
@@ -366,6 +554,16 @@ class InterpFlowModel:
         subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def resource_path(self,relative_path):
+        """
+            Loads the fitted model for exe file
+
+            Parameters
+            ----------
+            loc : String
+                Location where the fitted model is saved relative to
+                this file
+        """
+
         import sys
         """Returns the correct path whether frozen or not."""
         if hasattr(sys, '_MEIPASS'):
@@ -380,6 +578,34 @@ class InterpFlowModel:
                 output_width=1280,
                 output_height=720,
                 progress_callback=None):
+        """
+            Interpolates the video using RIFE without exception handling
+
+            Parameters
+            ----------
+            output_folder : String
+                Where the model is going to be saved
+
+            video_dr : String
+                Location of the video
+
+            batch : int
+                 Number of batch
+
+            path_to_trt : String
+                 Location of the trt model is saved
+                 If None , uses normal/torch model
+
+            output_width : int
+                 width of output video
+
+            output_height : int
+                 height of output video
+
+            progress_callback: Function
+                 Function that prints how much video has been processed
+
+        """
 
         video_writer = None
         if progress_callback:
@@ -398,17 +624,17 @@ class InterpFlowModel:
 
         if not self.fitted:
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
-            # self.model = Model_2()
-            # self.model.eval()
-            #
-            # model_path = self.resource_path("InterpFlow/trained_models/pretrained_for_v3")
-            # self.model.load_model(model_path)
-
             self.model = Model_2()
             self.model.eval()
-            script_dir = os.path.dirname(os.path.realpath(__file__))
-            model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
+
+            model_path = self.resource_path("InterpFlow/trained_models/pretrained_for_v3")
             self.model.load_model(model_path)
+            #
+            # self.model = Model_2()
+            # self.model.eval()
+            # script_dir = os.path.dirname(os.path.realpath(__file__))
+            # model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
+            # self.model.load_model(model_path)
 
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
@@ -567,6 +793,34 @@ class InterpFlowModel:
                 output_height=720,
                 progress_callback=None,
                 error_callback=None):
+        """
+                   Interpolates the video using RIFE with exception handling
+
+                   Parameters
+                   ----------
+                   output_folder : String
+                       Where the model is going to be saved
+
+                   video_dr : String
+                       Location of the video
+
+                   batch : int
+                        Number of batch
+
+                   path_to_trt : String
+                        Location of the trt model is saved
+                        If None , uses normal/torch model
+
+                   output_width : int
+                        width of output video
+
+                   output_height : int
+                        height of output video
+
+                   progress_callback: Function
+                        Function that prints how much video has been processed
+
+        """
         try:
             self.predict_wihtout_try(
                 video_dr=video_dr,
