@@ -794,9 +794,9 @@ class InterpFlowModel:
                 progress_callback=None,
                 error_callback=None):
         """
-                   Interpolates the video using RIFE with exception handling
+            Interpolates the video using RIFE with exception handling
 
-                   Parameters
+            Parameters
                    ----------
                    output_folder : String
                        Where the model is going to be saved
