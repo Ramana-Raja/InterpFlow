@@ -256,13 +256,17 @@ class InterpFlowModel:
                         i = 0
                     image.close()
                 j = j + 1
+
         x = np.array(x_train)
         x1 = np.array(x_train1)
         y = np.array(y_train)
+
         x = torch.tensor(x, dtype=torch.float32)
         x1 = torch.tensor(x1, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.float32)
+
         dataset = TensorDataset(x, x1, y)
+
         self.dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
 
     def generate_images(self,prediction, test_input,test_input2, tar):
@@ -336,6 +340,7 @@ class InterpFlowModel:
         model.eval()
 
         dummy_input = torch.randn(batch, 6, img_size[0], img_size[1]).to(self.device)
+
         torch.onnx.export(
         model,
         dummy_input,
@@ -350,7 +355,9 @@ class InterpFlowModel:
             'output': {0: 'batch_size', 2: 'height', 3: 'width'}
         }
         )
+
         self.output_path = output_path
+
         print(f"ONNX model exported to: {output_path}")
 
 
@@ -471,6 +478,7 @@ class InterpFlowModel:
         print("converting to numpy array")
         self.make_nparray_for_train(start_frame=start_frame,max_frames=max_frames,width=width,height=height)
         print("training")
+
         for p in range(epochs):
             total_batches = len(self.dataloader)
             for i, (batch_x, batch_x1, batch_y) in enumerate(self.dataloader):
@@ -565,7 +573,7 @@ class InterpFlowModel:
         """
 
         import sys
-        """Returns the correct path whether frozen or not."""
+
         if hasattr(sys, '_MEIPASS'):
             return os.path.join(sys._MEIPASS, relative_path)
         return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
