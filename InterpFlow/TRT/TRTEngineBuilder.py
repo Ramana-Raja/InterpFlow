@@ -47,6 +47,7 @@ class EngineBuilder:
             input_shape: List of tuple, each having len==3
                 Each tuple has 3 values, i.e min,opt,max
            """
+
         explicit_batch = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
         self.network = self.builder.create_network(explicit_batch)
         self.parser = trt.OnnxParser(self.network, self.trt_logger)
