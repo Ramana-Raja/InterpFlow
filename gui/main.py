@@ -16,9 +16,7 @@ class App(ctk.CTk):
         self.columnconfigure(1, weight=6)
 
         self.video_import = VideoImport(self, self.import_func)
-
         self.mainloop()
-
     def handle_error(self, error):
         error_message = f"Error: {str(error)}"
         print(error_message)
@@ -62,7 +60,3 @@ class App(ctk.CTk):
             )
         except Exception as e:
             self.handle_error(e)
-
-if __name__ == "__main__":
-    App()
-

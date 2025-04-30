@@ -247,6 +247,10 @@ class InterpFlowModel:
         do_constant_folding=True,
         input_names=['input'],
         output_names=['output'],
+        dynamic_axes={
+            'input': {0: 'batch_size', 2: 'height', 3: 'width'},
+            'output': {0: 'batch_size', 2: 'height', 3: 'width'}
+        }
         )
         self.output_path = output_path
         print(f"ONNX model exported to: {output_path}")
@@ -376,12 +380,6 @@ class InterpFlowModel:
                 output_width=1280,
                 output_height=720,
                 progress_callback=None):
-
-        if batch<1:
-            raise ValueError(f"{batch} cannot be the size of batch")
-
-        if output_height < 0 or output_width<0:
-            raise ValueError(f"{output_width} and {output_height} cannot be output size")
 
         video_writer = None
         if progress_callback:
