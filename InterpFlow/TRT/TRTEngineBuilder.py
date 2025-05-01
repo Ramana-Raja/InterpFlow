@@ -100,9 +100,17 @@ class EngineBuilder:
     def create_engine(self, engine_path, precision="fp16", use_int8=False):
         """
         Build the TensorRT engine and serialize it to disk.
-        :param engine_path: The path where to serialize the engine to.
-        :param precision: The datatype to use for the engine, either 'fp32', 'fp16'.
-        :param use_int8: Enable INT8 precision mode if hardware supports it.
+
+        Parameters
+        ----------
+        engine_path: String
+            The path where to serialize the engine to.
+
+        precision: String
+            The datatype to use for the engine, either 'fp32', 'fp16'.
+
+        use_int8: Boolean
+            Enable INT8 precision mode if hardware supports it.
         """
         engine_path = os.path.realpath(engine_path)
         os.makedirs(os.path.dirname(engine_path), exist_ok=True)
