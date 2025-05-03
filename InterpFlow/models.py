@@ -706,9 +706,9 @@ class InterpFlowModel:
 
                     temp = trt_model.infer(result)
 
-                    temp = np.transpose(temp, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-                    x = np.transpose(x, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
-                    x_1 = np.transpose(x_1, (0, 2, 3, 1))  # Change shape to (N, H, W, C)
+                    temp = np.transpose(temp, (0, 2, 3, 1))
+                    x = np.transpose(x, (0, 2, 3, 1))
+                    x_1 = np.transpose(x_1, (0, 2, 3, 1))
 
                     if temp.shape != x.shape:
                         temp = np.array([cv2.resize(img, (x.shape[2], x.shape[1])) for img in temp])
