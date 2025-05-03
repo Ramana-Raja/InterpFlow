@@ -829,6 +829,7 @@ class InterpFlowModel:
                         Function that prints how much video has been processed
 
         """
+
         try:
             self.predict_wihtout_try(
                 video_dr=video_dr,
