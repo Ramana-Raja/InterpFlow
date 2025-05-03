@@ -112,6 +112,7 @@ class EngineBuilder:
         use_int8: Boolean
             Enable INT8 precision mode if hardware supports it.
         """
+
         engine_path = os.path.realpath(engine_path)
         os.makedirs(os.path.dirname(engine_path), exist_ok=True)
         log.info("Building {} Engine in {}".format(precision, engine_path))
