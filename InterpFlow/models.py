@@ -635,14 +635,12 @@ class InterpFlowModel:
             self.model = Model_2()
             self.model.eval()
 
-            model_path = self.resource_path("InterpFlow/trained_models/pretrained_for_v3")
-            self.model.load_model(model_path)
-            #
-            # self.model = Model_2()
-            # self.model.eval()
-            # script_dir = os.path.dirname(os.path.realpath(__file__))
-            # model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
+            # model_path = self.resource_path("InterpFlow/trained_models/pretrained_for_v3")
             # self.model.load_model(model_path)
+            #
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
+            self.model.load_model(model_path)
 
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width, height=output_height)
@@ -719,7 +717,6 @@ class InterpFlowModel:
                     temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
                     x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
                     x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
-                    # self.save_images_on_batch(x=x, temp=temp, x_1=x_1)
 
                     if video_writer is None:
                         height, width, _ = x[0].shape
