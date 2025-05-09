@@ -629,6 +629,7 @@ class InterpFlowModel:
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
         output_video_path = os.path.join(output_folder, "output_video.mp4")
+        self.model.eval()
 
         if not self.fitted:
             from InterpFlow.Models.v3.RIFE_HDv3 import Model as Model_2
@@ -668,6 +669,7 @@ class InterpFlowModel:
                 temp = (temp * 255).clip(0, 255).astype(np.uint8)
                 x = (x * 255).clip(0, 255).astype(np.uint8)
                 x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+
                 temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
                 x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
                 x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
@@ -740,7 +742,6 @@ class InterpFlowModel:
                 return
 
         else:
-            self.model.eval()
             while True:
                 x, x_1 = self.create_images_for_predict(width=output_width,height=output_height)
 
@@ -768,6 +769,7 @@ class InterpFlowModel:
                 temp = (temp * 255).clip(0, 255).astype(np.uint8)
                 x = (x * 255).clip(0, 255).astype(np.uint8)
                 x_1 = (x_1 * 255).clip(0, 255).astype(np.uint8)
+
                 temp = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in temp])
                 x = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x])
                 x_1 = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in x_1])
@@ -780,13 +782,16 @@ class InterpFlowModel:
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     video_writer = cv2.VideoWriter(output_video_path, fourcc, self.fps * 2, (width, height))
                     video_writer.write(x[0])
+
                     self.j += 1
                     progress_bar(self.j, self.total_frames)
+
                 for i in range(self.batch):
                     video_writer.write(temp[i])
                     video_writer.write(x_1[i])
                     self.j +=1
                     progress_bar(self.j, self.total_frames)
+
         progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
     def predict(self,
