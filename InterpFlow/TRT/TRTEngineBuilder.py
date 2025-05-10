@@ -14,8 +14,13 @@ class EngineBuilder:
 
     def __init__(self, verbose=False, workspace=8):
         """
-        :param verbose: If enabled, a higher verbosity level will be set on the TensorRT logger.
-        :param workspace: Max memory workspace to allow, in GB. Increased for maximum optimization.
+        Parameters
+        ----------
+        verbose: Boolean
+            If enabled, a higher verbosity level will be set on the TensorRT logger.
+
+        workspace: int
+            Max memory workspace to allow, in GB. Increased for maximum optimization.
         """
         self.trt_logger = trt.Logger(trt.Logger.ERROR)
         if verbose:
