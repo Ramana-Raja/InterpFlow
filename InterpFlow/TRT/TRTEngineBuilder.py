@@ -53,8 +53,7 @@ class EngineBuilder:
                 Each tuple has 3 values, i.e min,opt,max
            """
 
-        explicit_batch = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
-        self.network = self.builder.create_network(explicit_batch)
+        self.network = self.builder.create_network(1)
         self.parser = trt.OnnxParser(self.network, self.trt_logger)
 
         onnx_path = os.path.realpath(onnx_path)
@@ -64,24 +63,6 @@ class EngineBuilder:
                 for error in range(self.parser.num_errors):
                     log.error(self.parser.get_error(error))
                 return False
-
-        input_tensor = self.network.get_input(0)
-        if not input_tensor:
-            log.error("No input tensor found in the ONNX model!")
-            return False
-
-        log.info(f"Found input tensor: {input_tensor.name}")
-
-        if len(input_tensor[0]) !=3:
-            raise ValueError("The input shape does not contain either of these values: min,opt,max")
-
-        for i in input_shape:
-            profile = self.builder.create_optimization_profile()
-            profile.set_shape(input_tensor.name,
-                              min = i[0],
-                              opt = i[1],
-                              max = i[2])
-            self.config.add_optimization_profile(profile)
 
         inputs = [self.network.get_input(i) for i in range(self.network.num_inputs)]
         outputs = [self.network.get_output(i) for i in range(self.network.num_outputs)]
@@ -100,6 +81,7 @@ class EngineBuilder:
                     output.name, output.shape, output.dtype
                 )
             )
+        assert self.batch_size > 0
         return True
 
     def create_engine(self, engine_path, precision="fp16", use_int8=False):
