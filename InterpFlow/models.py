@@ -801,6 +801,7 @@ class InterpFlowModel:
 
         progress_bar(self.total_frames, self.total_frames)
         video_writer.release()
+
     def predict(self,
                 output_folder="",
                 video_dr="",
