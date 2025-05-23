@@ -38,6 +38,7 @@ class InterpFlowModel:
         """
 
         import shutil
+
         self.temp_dir = "temp_folder"
         if os.path.exists(self.temp_dir):
             if delete_previous:
@@ -50,9 +51,7 @@ class InterpFlowModel:
         self.fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0
 
-        # Read until video is completed
         while cap.isOpened():
-            print("capturing video")
             ret, frame = cap.read()
             if ret:
                 # Save the frame as an image file
@@ -585,7 +584,8 @@ class InterpFlowModel:
                 path_to_trt=None,
                 output_width=1280,
                 output_height=720,
-                progress_callback=None):
+                progress_callback=None,
+                from_app = False):
         """
             Interpolates the video using RIFE without exception handling
 
@@ -636,9 +636,11 @@ class InterpFlowModel:
             self.model = Model_2()
             self.model.eval()
 
+
             # model_path = self.resource_path("InterpFlow/trained_models/pretrained_for_v3")
             # self.model.load_model(model_path)
-            #
+
+
             script_dir = os.path.dirname(os.path.realpath(__file__))
             model_path = os.path.join(script_dir, "trained_models/pretrained_for_v3")
             self.model.load_model(model_path)
@@ -652,6 +654,7 @@ class InterpFlowModel:
                 x = torch.tensor(x).to(self.device)
                 x_1 = torch.tensor(x_1).to(self.device)
                 imgs = torch.cat((x, x_1), 1)
+
                 temp = self.model.inference(imgs)
 
                 temp = temp.permute(0, 2, 3, 1)
@@ -684,11 +687,13 @@ class InterpFlowModel:
                     video_writer.write(x[0])
                     self.j += 1
                     progress_bar(self.j, self.total_frames)
+
                 for i in range(self.batch):
                     video_writer.write(temp[i])
                     video_writer.write(x_1[i])
                     self.j += 1
                     progress_bar(self.j, self.total_frames)
+
             progress_bar(self.total_frames, self.total_frames)
             video_writer.release()
             self.add_audio(output_video_path=output_video_path,output_folder=output_folder)

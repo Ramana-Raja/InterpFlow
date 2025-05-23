@@ -102,7 +102,7 @@ class VideoImport(ctk.CTkFrame):
 
     def start_processing(self):
         if not self.video_path or not self.output_folder:
-            self.update_status("⚠Please select both video and output folder.", success=False)
+            self.update_status("Please select both video and output folder.", success=False)
             return
 
         self.update_status("Processing started...", success=True)
