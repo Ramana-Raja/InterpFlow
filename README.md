@@ -19,7 +19,7 @@ The dependencies include:
 
 ### Initialization
 
-To initialize the frame generator, provide the location of the video file and the desired frames per second (FPS):
+To initialize the frame generator:
 
 ```python
 from InterpFlow import InterpFlowModel
