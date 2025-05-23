@@ -620,6 +620,7 @@ class InterpFlowModel:
             progress_bar = progress_callback
         else:
             progress_bar = print_progress_bar
+
         self.batch = batch
         self.j = 0
         self.frame_position = 0
@@ -628,6 +629,7 @@ class InterpFlowModel:
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.last_frame = None
+
         output_video_path = os.path.join(output_folder, "output_video.mp4")
         self.model.eval()
 
